@@ -179,6 +179,12 @@
     @apply border-border;
   }
 
+  html {
+    /* Prevent layout shift when scrollbar appears/disappears */
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
