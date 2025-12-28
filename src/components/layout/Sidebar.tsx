@@ -74,7 +74,7 @@ export function Sidebar() {
     .toUpperCase() || 'U';
 
   return (
-    <aside className="w-56 min-h-[calc(100vh-4rem)] bg-sidebar border-r border-sidebar-border flex flex-col no-print">
+    <aside className="w-56 h-[calc(100vh-4rem)] sticky top-16 bg-sidebar border-r border-sidebar-border flex flex-col no-print">
       {/* Quick Create Button */}
       <div className="p-3">
         <Button 
