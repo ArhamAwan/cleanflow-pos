@@ -22,12 +22,12 @@ interface DataTableProps<T> {
 
 export function DataTable<T>({ columns, data, keyExtractor }: DataTableProps<T>) {
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="glass-card rounded-xl overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/50">
+          <TableRow className="border-border/50 hover:bg-transparent">
             {columns.map((column) => (
-              <TableHead key={column.key} className="font-semibold text-foreground">
+              <TableHead key={column.key} className="text-muted-foreground font-semibold">
                 {column.header}
               </TableHead>
             ))}
@@ -42,7 +42,7 @@ export function DataTable<T>({ columns, data, keyExtractor }: DataTableProps<T>)
             </TableRow>
           ) : (
             data.map((item) => (
-              <TableRow key={keyExtractor(item)} className="hover:bg-muted/30">
+              <TableRow key={keyExtractor(item)} className="border-border/50 hover:bg-muted/30 transition-colors">
                 {columns.map((column) => (
                   <TableCell key={column.key}>
                     {column.render 

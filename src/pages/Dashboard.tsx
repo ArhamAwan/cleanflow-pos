@@ -63,11 +63,14 @@ export default function Dashboard() {
       </div>
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="font-semibold text-lg text-foreground mb-4">Recent Jobs</h3>
+        <div className="glass-card rounded-xl p-6">
+          <h3 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-primary" />
+            Recent Jobs
+          </h3>
           <div className="space-y-3">
             {todayJobs.map(job => (
-              <div key={job.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div key={job.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                 <div>
                   <p className="font-medium text-foreground">{job.customerName}</p>
                   <p className="text-sm text-muted-foreground">{job.serviceName}</p>
@@ -87,16 +90,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="font-semibold text-lg text-foreground mb-4">Recent Payments</h3>
+        <div className="glass-card rounded-xl p-6">
+          <h3 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-secondary" />
+            Recent Payments
+          </h3>
           <div className="space-y-3">
             {mockPayments.slice(0, 4).map(payment => (
-              <div key={payment.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div key={payment.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                 <div>
                   <p className="font-medium text-foreground">{payment.description}</p>
                   <p className="text-sm text-muted-foreground">{payment.method.toUpperCase()} • {payment.date}</p>
                 </div>
-                <p className={`font-medium ${payment.type === 'cash_in' ? 'text-success' : 'text-destructive'}`}>
+                <p className={`font-semibold ${payment.type === 'cash_in' ? 'text-success' : 'text-destructive'}`}>
                   {payment.type === 'cash_in' ? '+' : '-'}{formatCurrency(payment.amount)}
                 </p>
               </div>

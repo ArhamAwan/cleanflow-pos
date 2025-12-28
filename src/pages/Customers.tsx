@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Edit } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -19,6 +20,7 @@ import { Customer } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Customers() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,6 +58,10 @@ export default function Customers() {
     setIsEditModalOpen(true);
   };
 
+  const viewLedger = (customer: Customer) => {
+    navigate(`/customers/${customer.id}/ledger`);
+  };
+
   const columns = [
     { key: 'name', header: 'Customer Name' },
     { key: 'phone', header: 'Phone' },
@@ -63,7 +69,7 @@ export default function Customers() {
       key: 'outstandingBalance', 
       header: 'Outstanding Balance',
       render: (customer: Customer) => (
-        <span className={customer.outstandingBalance > 0 ? 'text-destructive font-medium' : 'text-success'}>
+        <span className={customer.outstandingBalance > 0 ? 'text-destructive font-semibold' : 'text-success font-semibold'}>
           {formatCurrency(customer.outstandingBalance)}
         </span>
       )
@@ -76,7 +82,7 @@ export default function Customers() {
           <Button variant="ghost" size="sm" onClick={() => openEditModal(customer)}>
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => viewLedger(customer)} className="glass-input">
             <Eye className="h-4 w-4 mr-1" />
             Ledger
           </Button>
@@ -94,6 +100,7 @@ export default function Customers() {
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="Enter customer name"
+          className="glass-input"
         />
       </div>
       <div className="space-y-2">
@@ -103,6 +110,7 @@ export default function Customers() {
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           placeholder="Enter phone number"
+          className="glass-input"
         />
       </div>
       <div className="space-y-2">
@@ -112,10 +120,11 @@ export default function Customers() {
           value={formData.address}
           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
           placeholder="Enter address"
+          className="glass-input"
         />
       </div>
       <DialogFooter>
-        <Button onClick={onSubmit}>{submitText}</Button>
+        <Button onClick={onSubmit} className="bg-gradient-to-r from-primary to-secondary">{submitText}</Button>
       </DialogFooter>
     </div>
   );
@@ -126,7 +135,7 @@ export default function Customers() {
         title="Customers" 
         description="Manage your customer database"
         action={
-          <Button onClick={() => setIsAddModalOpen(true)}>
+          <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-to-r from-primary to-secondary">
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
@@ -140,7 +149,7 @@ export default function Customers() {
             placeholder="Search customers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 glass-input"
           />
         </div>
       </div>
@@ -153,7 +162,7 @@ export default function Customers() {
 
       {/* Add Customer Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card">
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
             <DialogDescription>Enter the customer details below.</DialogDescription>
@@ -164,7 +173,7 @@ export default function Customers() {
 
       {/* Edit Customer Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>Update the customer details below.</DialogDescription>
