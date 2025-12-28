@@ -1,5 +1,4 @@
-import { LucideIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SummaryCardProps {
@@ -7,48 +6,63 @@ interface SummaryCardProps {
   value: string;
   icon: LucideIcon;
   variant?: 'default' | 'success' | 'warning' | 'destructive';
-  onViewDetails?: () => void;
+  trend?: {
+    value: number;
+    label?: string;
+  };
+  description?: string;
 }
 
-export function SummaryCard({ title, value, icon: Icon, variant = 'default', onViewDetails }: SummaryCardProps) {
+export function SummaryCard({ 
+  title, 
+  value, 
+  icon: Icon, 
+  variant = 'default', 
+  trend,
+  description
+}: SummaryCardProps) {
   const iconWrapperClass = cn(
-    'h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-300',
+    'h-10 w-10 rounded-lg flex items-center justify-center',
     {
       'bg-primary/10 text-primary': variant === 'default',
-      'bg-success/10 text-success glow-success': variant === 'success',
-      'bg-warning/10 text-warning glow-warning': variant === 'warning',
-      'bg-destructive/10 text-destructive glow-destructive': variant === 'destructive',
+      'bg-success/10 text-success': variant === 'success',
+      'bg-warning/10 text-warning': variant === 'warning',
+      'bg-destructive/10 text-destructive': variant === 'destructive',
     }
   );
 
-  const borderClass = cn({
-    'border-primary/20': variant === 'default',
-    'border-success/20': variant === 'success',
-    'border-warning/20': variant === 'warning',
-    'border-destructive/20': variant === 'destructive',
-  });
+  const trendColor = trend?.value && trend.value >= 0 ? 'text-success' : 'text-destructive';
+  const TrendIcon = trend?.value && trend.value >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className={cn('glass-card rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl', borderClass)}>
-      <div className="flex items-start justify-between">
+    <div className="bg-card border border-border rounded-xl p-5 transition-all duration-200 hover:border-primary/30">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        {trend && (
+          <div className={cn('flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full', trendColor, {
+            'bg-success/10': trend.value >= 0,
+            'bg-destructive/10': trend.value < 0,
+          })}>
+            <TrendIcon className="h-3 w-3" />
+            <span>{trend.value >= 0 ? '+' : ''}{trend.value}%</span>
+          </div>
+        )}
+      </div>
+      
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-3xl font-bold text-foreground font-mono tracking-tight">{value}</p>
+          {description && (
+            <p className="text-xs text-muted-foreground mt-1.5">{description}</p>
+          )}
+          {trend?.label && !description && (
+            <p className="text-xs text-muted-foreground mt-1.5">{trend.label}</p>
+          )}
+        </div>
         <div className={iconWrapperClass}>
-          <Icon className="h-6 w-6" />
+          <Icon className="h-5 w-5" />
         </div>
       </div>
-      <div className="mt-4">
-        <p className="text-sm text-muted-foreground">{title}</p>
-        <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
-      </div>
-      {onViewDetails && (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onViewDetails} 
-          className="mt-4 w-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
-        >
-          View Details →
-        </Button>
-      )}
     </div>
   );
 }

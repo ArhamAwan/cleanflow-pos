@@ -46,6 +46,10 @@
     --info: oklch(0.65 0.12 220);
     --info-foreground: oklch(1.0000 0 0);
 
+    /* Teal accent */
+    --teal: oklch(0.68 0.14 180);
+    --teal-foreground: oklch(0.1791 0.0102 248.3976);
+
     /* Chart colors */
     --chart-1: oklch(0.6468 0.1496 240.9982);
     --chart-2: oklch(0.7941 0.1406 177.5187);
@@ -94,83 +98,87 @@
   }
 
   .dark {
-    /* TweakCN Theme - Dark Mode (OKLCH) */
-    --background: oklch(0.12 0.015 248);
-    --foreground: oklch(0.9619 0 0);
+    /* TweakCN Theme - Dark Mode (OKLCH) - Deep, rich blacks */
+    --background: oklch(0.08 0.012 248);
+    --foreground: oklch(0.95 0.005 248);
 
-    --card: oklch(0.15 0.012 248);
-    --card-foreground: oklch(0.9619 0 0);
+    --card: oklch(0.11 0.01 248);
+    --card-foreground: oklch(0.95 0.005 248);
 
-    --popover: oklch(0.14 0.012 248);
-    --popover-foreground: oklch(0.9619 0 0);
+    --popover: oklch(0.10 0.01 248);
+    --popover-foreground: oklch(0.95 0.005 248);
 
-    --primary: oklch(0.7150 0.1481 237.4434);
-    --primary-foreground: oklch(0.1 0 0);
+    --primary: oklch(0.72 0.14 180);
+    --primary-foreground: oklch(0.08 0 0);
 
-    --secondary: oklch(0.22 0.012 248);
-    --secondary-foreground: oklch(0.9619 0 0);
+    --secondary: oklch(0.16 0.01 248);
+    --secondary-foreground: oklch(0.95 0.005 248);
 
-    --muted: oklch(0.20 0.008 248);
-    --muted-foreground: oklch(0.65 0.02 248);
+    --muted: oklch(0.14 0.008 248);
+    --muted-foreground: oklch(0.55 0.015 248);
 
-    --accent: oklch(0.28 0.05 240);
-    --accent-foreground: oklch(0.9619 0 0);
+    --accent: oklch(0.20 0.04 180);
+    --accent-foreground: oklch(0.95 0.005 248);
 
-    --destructive: oklch(0.5800 0.20 27);
+    --destructive: oklch(0.55 0.22 25);
     --destructive-foreground: oklch(0.98 0 0);
 
-    --border: oklch(0.28 0.015 248);
-    --input: oklch(0.25 0.012 248);
-    --ring: oklch(0.7150 0.1481 237.4434);
+    --border: oklch(0.20 0.012 248);
+    --input: oklch(0.14 0.01 248);
+    --ring: oklch(0.72 0.14 180);
+
+    /* Teal accent for charts and highlights */
+    --teal: oklch(0.72 0.14 180);
+    --teal-foreground: oklch(0.08 0 0);
 
     /* Status colors dark (OKLCH) */
-    --success: oklch(0.65 0.14 150);
-    --success-foreground: oklch(0.1 0 0);
-    --warning: oklch(0.72 0.14 70);
-    --warning-foreground: oklch(0.1 0 0);
-    --info: oklch(0.62 0.11 220);
-    --info-foreground: oklch(0.1 0 0);
+    --success: oklch(0.65 0.16 150);
+    --success-foreground: oklch(0.08 0 0);
+    --warning: oklch(0.75 0.15 70);
+    --warning-foreground: oklch(0.08 0 0);
+    --info: oklch(0.65 0.12 220);
+    --info-foreground: oklch(0.08 0 0);
 
-    /* Chart colors dark */
-    --chart-1: oklch(0.7150 0.1481 237.4434);
-    --chart-2: oklch(0.7046 0.1185 178.6086);
-    --chart-3: oklch(0.5500 0.16 280);
-    --chart-4: oklch(0.7573 0.1531 77.2983);
-    --chart-5: oklch(0.6200 0.22 328);
+    /* Chart colors dark - teal-focused */
+    --chart-1: oklch(0.72 0.14 180);
+    --chart-2: oklch(0.65 0.12 160);
+    --chart-3: oklch(0.58 0.10 200);
+    --chart-4: oklch(0.75 0.14 140);
+    --chart-5: oklch(0.68 0.11 190);
 
-    /* Sidebar dark */
-    --sidebar: oklch(0.10 0.01 248);
-    --sidebar-foreground: oklch(0.9619 0 0);
-    --sidebar-primary: oklch(0.7150 0.1481 237.4434);
-    --sidebar-primary-foreground: oklch(0.1 0 0);
-    --sidebar-accent: oklch(0.22 0.04 240);
-    --sidebar-accent-foreground: oklch(0.9619 0 0);
-    --sidebar-border: oklch(0.25 0.015 248);
-    --sidebar-ring: oklch(0.7150 0.1481 237.4434);
+    /* Sidebar dark - deeper */
+    --sidebar: oklch(0.06 0.008 248);
+    --sidebar-foreground: oklch(0.95 0.005 248);
+    --sidebar-primary: oklch(0.72 0.14 180);
+    --sidebar-primary-foreground: oklch(0.08 0 0);
+    --sidebar-accent: oklch(0.14 0.03 180);
+    --sidebar-accent-foreground: oklch(0.95 0.005 248);
+    --sidebar-border: oklch(0.18 0.01 248);
+    --sidebar-ring: oklch(0.72 0.14 180);
 
-    /* Enhanced shadows - dark */
-    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.2);
-    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.35);
-    --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.45);
-    --shadow-xl: 0 16px 48px oklch(0 0 0 / 0.55);
-    --shadow-glow: 0 0 30px oklch(from var(--primary) l c h / 0.35);
-    --shadow-glow-lg: 0 0 60px oklch(from var(--primary) l c h / 0.45);
+    /* Enhanced shadows - dark - more subtle */
+    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
+    --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.5);
+    --shadow-xl: 0 16px 48px oklch(0 0 0 / 0.6);
+    --shadow-glow: 0 0 20px oklch(from var(--primary) l c h / 0.25);
+    --shadow-glow-lg: 0 0 40px oklch(from var(--primary) l c h / 0.35);
 
-    /* Glassmorphism - dark */
-    --glass-bg: oklch(from var(--card) l c h / 0.65);
-    --glass-border: oklch(1 0 0 / 0.08);
-    --glass-highlight: oklch(1 0 0 / 0.06);
-    --glass-blur: 24px;
-    --glass-blur-strong: 40px;
+    /* Glassmorphism - dark - cleaner, more minimal */
+    --glass-bg: oklch(from var(--card) l c h / 0.85);
+    --glass-border: oklch(1 0 0 / 0.06);
+    --glass-highlight: oklch(1 0 0 / 0.03);
+    --glass-blur: 16px;
+    --glass-blur-strong: 24px;
 
-    /* Gradient backgrounds - dark */
-    --gradient-start: oklch(0.10 0.02 260);
-    --gradient-mid: oklch(0.11 0.018 240);
-    --gradient-end: oklch(0.12 0.025 280);
+    /* Gradient backgrounds - dark - more subtle */
+    --gradient-start: oklch(0.08 0.012 248);
+    --gradient-mid: oklch(0.08 0.01 240);
+    --gradient-end: oklch(0.08 0.015 260);
     --gradient-mesh: 
-      radial-gradient(ellipse at 15% 25%, oklch(0.25 0.08 240 / 0.5) 0%, transparent 50%),
-      radial-gradient(ellipse at 85% 65%, oklch(0.22 0.06 180 / 0.35) 0%, transparent 45%),
-      radial-gradient(ellipse at 45% 85%, oklch(0.24 0.07 320 / 0.3) 0%, transparent 50%);
+      radial-gradient(ellipse at 15% 25%, oklch(0.20 0.06 180 / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 65%, oklch(0.18 0.04 200 / 0.15) 0%, transparent 45%),
+      radial-gradient(ellipse at 45% 85%, oklch(0.16 0.05 160 / 0.12) 0%, transparent 50%);
   }
 }
 
