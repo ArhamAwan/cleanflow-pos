@@ -68,6 +68,10 @@ export default {
           DEFAULT: "var(--info)",
           foreground: "var(--info-foreground)",
         },
+        teal: {
+          DEFAULT: "var(--teal)",
+          foreground: "var(--teal-foreground)",
+        },
         chart: {
           "1": "var(--chart-1)",
           "2": "var(--chart-2)",
