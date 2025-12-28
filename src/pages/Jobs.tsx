@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Search, CreditCard, FileText } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Search, CreditCard, Printer } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable } from '@/components/shared/DataTable';
@@ -25,11 +25,14 @@ import {
 import { mockJobs, mockCustomers, mockServiceTypes, formatCurrency } from '@/data/mockData';
 import { Job } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { JobReceipt } from '@/components/receipts/JobReceipt';
+import { useReactToPrint } from 'react-to-print';
 
 export default function Jobs() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
@@ -38,6 +41,12 @@ export default function Jobs() {
   });
   const [paymentAmount, setPaymentAmount] = useState('');
   const { toast } = useToast();
+  const receiptRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: receiptRef,
+    documentTitle: `Receipt-${selectedJob?.id || 'job'}`,
+  });
 
   const filteredJobs = mockJobs.filter(job =>
     job.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -70,6 +79,11 @@ export default function Jobs() {
     setIsPaymentModalOpen(true);
   };
 
+  const openReceiptModal = (job: Job) => {
+    setSelectedJob(job);
+    setIsReceiptModalOpen(true);
+  };
+
   const columns = [
     { key: 'id', header: 'Job ID' },
     { key: 'customerName', header: 'Customer' },
@@ -78,7 +92,7 @@ export default function Jobs() {
     { 
       key: 'amount', 
       header: 'Amount',
-      render: (job: Job) => formatCurrency(job.amount)
+      render: (job: Job) => <span className="font-semibold">{formatCurrency(job.amount)}</span>
     },
     { 
       key: 'paymentStatus', 
@@ -91,13 +105,13 @@ export default function Jobs() {
       render: (job: Job) => (
         <div className="flex gap-2">
           {job.paymentStatus !== 'paid' && (
-            <Button variant="outline" size="sm" onClick={() => openPaymentModal(job)}>
+            <Button variant="outline" size="sm" onClick={() => openPaymentModal(job)} className="glass-input">
               <CreditCard className="h-4 w-4 mr-1" />
               Pay
             </Button>
           )}
-          <Button variant="ghost" size="sm">
-            <FileText className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={() => openReceiptModal(job)}>
+            <Printer className="h-4 w-4" />
           </Button>
         </div>
       )
@@ -110,7 +124,7 @@ export default function Jobs() {
         title="Jobs / Services" 
         description="Manage service jobs and track payments"
         action={
-          <Button onClick={() => setIsAddModalOpen(true)}>
+          <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-to-r from-primary to-secondary">
             <Plus className="h-4 w-4 mr-2" />
             Add Job
           </Button>
@@ -124,7 +138,7 @@ export default function Jobs() {
             placeholder="Search jobs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 glass-input"
           />
         </div>
       </div>
@@ -137,7 +151,7 @@ export default function Jobs() {
 
       {/* Add Job Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card">
           <DialogHeader>
             <DialogTitle>Add New Job</DialogTitle>
             <DialogDescription>Create a new service job for a customer.</DialogDescription>
@@ -146,7 +160,7 @@ export default function Jobs() {
             <div className="space-y-2">
               <Label>Customer</Label>
               <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="glass-input">
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -161,7 +175,7 @@ export default function Jobs() {
             <div className="space-y-2">
               <Label>Service Type</Label>
               <Select value={formData.serviceId} onValueChange={(v) => setFormData({ ...formData, serviceId: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="glass-input">
                   <SelectValue placeholder="Select service" />
                 </SelectTrigger>
                 <SelectContent>
@@ -180,10 +194,11 @@ export default function Jobs() {
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="glass-input"
               />
             </div>
             <DialogFooter>
-              <Button onClick={handleAddJob}>Create Job</Button>
+              <Button onClick={handleAddJob} className="bg-gradient-to-r from-primary to-secondary">Create Job</Button>
             </DialogFooter>
           </div>
         </DialogContent>
@@ -191,7 +206,7 @@ export default function Jobs() {
 
       {/* Add Payment Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
@@ -202,7 +217,7 @@ export default function Jobs() {
           </DialogHeader>
           {selectedJob && (
             <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="bg-muted/30 p-4 rounded-xl space-y-2 backdrop-blur-sm">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Amount:</span>
                   <span className="font-medium">{formatCurrency(selectedJob.amount)}</span>
@@ -211,7 +226,7 @@ export default function Jobs() {
                   <span className="text-muted-foreground">Already Paid:</span>
                   <span className="font-medium text-success">{formatCurrency(selectedJob.paidAmount)}</span>
                 </div>
-                <div className="flex justify-between text-sm border-t border-border pt-2">
+                <div className="flex justify-between text-sm border-t border-border/50 pt-2">
                   <span className="text-muted-foreground">Remaining:</span>
                   <span className="font-medium text-destructive">{formatCurrency(selectedJob.amount - selectedJob.paidAmount)}</span>
                 </div>
@@ -224,12 +239,13 @@ export default function Jobs() {
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   placeholder="Enter amount"
+                  className="glass-input"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Payment Method</Label>
                 <Select defaultValue="cash">
-                  <SelectTrigger>
+                  <SelectTrigger className="glass-input">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -239,9 +255,37 @@ export default function Jobs() {
                 </Select>
               </div>
               <DialogFooter>
-                <Button onClick={handleAddPayment}>Record Payment</Button>
+                <Button onClick={handleAddPayment} className="bg-gradient-to-r from-primary to-secondary">Record Payment</Button>
               </DialogFooter>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Modal */}
+      <Dialog open={isReceiptModalOpen} onOpenChange={setIsReceiptModalOpen}>
+        <DialogContent className="glass-card max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Job Receipt</DialogTitle>
+            <DialogDescription>
+              Preview and print the receipt for this job.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedJob && (
+            <>
+              <div className="max-h-[60vh] overflow-auto">
+                <JobReceipt ref={receiptRef} job={selectedJob} />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsReceiptModalOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => handlePrint()} className="bg-gradient-to-r from-primary to-secondary">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Receipt
+                </Button>
+              </DialogFooter>
+            </>
           )}
         </DialogContent>
       </Dialog>

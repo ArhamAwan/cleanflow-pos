@@ -1,52 +1,54 @@
 import { LucideIcon } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SummaryCardProps {
   title: string;
   value: string;
   icon: LucideIcon;
-  onViewDetails?: () => void;
   variant?: 'default' | 'success' | 'warning' | 'destructive';
+  onViewDetails?: () => void;
 }
 
-export function SummaryCard({ title, value, icon: Icon, onViewDetails, variant = 'default' }: SummaryCardProps) {
-  const getIconBgClass = () => {
-    switch (variant) {
-      case 'success':
-        return 'bg-success/10 text-success';
-      case 'warning':
-        return 'bg-warning/10 text-warning';
-      case 'destructive':
-        return 'bg-destructive/10 text-destructive';
-      default:
-        return 'bg-primary/10 text-primary';
+export function SummaryCard({ title, value, icon: Icon, variant = 'default', onViewDetails }: SummaryCardProps) {
+  const iconWrapperClass = cn(
+    'h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-300',
+    {
+      'bg-primary/10 text-primary': variant === 'default',
+      'bg-success/10 text-success glow-success': variant === 'success',
+      'bg-warning/10 text-warning glow-warning': variant === 'warning',
+      'bg-destructive/10 text-destructive glow-destructive': variant === 'destructive',
     }
-  };
+  );
+
+  const borderClass = cn({
+    'border-primary/20': variant === 'default',
+    'border-success/20': variant === 'success',
+    'border-warning/20': variant === 'warning',
+    'border-destructive/20': variant === 'destructive',
+  });
 
   return (
-    <Card className="border-border">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
-          </div>
-          <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${getIconBgClass()}`}>
-            <Icon className="h-6 w-6" />
-          </div>
+    <div className={cn('glass-card rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl', borderClass)}>
+      <div className="flex items-start justify-between">
+        <div className={iconWrapperClass}>
+          <Icon className="h-6 w-6" />
         </div>
-        {onViewDetails && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="mt-4 text-primary hover:text-primary/80 p-0 h-auto"
-            onClick={onViewDetails}
-          >
-            View Details →
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      <div className="mt-4">
+        <p className="text-sm text-muted-foreground">{title}</p>
+        <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+      </div>
+      {onViewDetails && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onViewDetails} 
+          className="mt-4 w-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        >
+          View Details →
+        </Button>
+      )}
+    </div>
   );
 }
