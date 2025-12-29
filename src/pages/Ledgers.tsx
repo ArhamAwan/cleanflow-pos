@@ -37,7 +37,16 @@ export default function Ledgers() {
     };
   });
 
-  const LedgerTable = ({ entries }: { entries: typeof mockCashLedger }) => (
+  interface SimpleLedgerEntry {
+    id: string;
+    date: string;
+    description: string;
+    debit: number;
+    credit: number;
+    balance: number;
+  }
+
+  const LedgerTable = ({ entries }: { entries: SimpleLedgerEntry[] }) => (
     <div className="border border-border rounded-lg overflow-hidden">
       <Table>
         <TableHeader>

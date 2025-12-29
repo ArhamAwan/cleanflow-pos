@@ -1,4 +1,14 @@
-import { User, Customer, ServiceType, Job, Payment, Expense, LedgerEntry } from '@/types';
+import { User, Customer, ServiceType, Job, Payment, Expense } from '@/types';
+
+// Simple ledger entry type for mock data (UI display only)
+interface SimpleLedgerEntry {
+  id: string;
+  date: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+}
 
 export const mockUsers: User[] = [
   { id: '1', name: 'Ahmed Khan', email: 'ahmed@sanitech.pk', role: 'admin', isActive: true },
@@ -48,7 +58,7 @@ export const mockExpenses: Expense[] = [
   { id: 'EXP-005', category: 'Maintenance', amount: 5000, description: 'Equipment repair', method: 'cash', date: '2024-12-20' },
 ];
 
-export const mockCashLedger: LedgerEntry[] = [
+export const mockCashLedger: SimpleLedgerEntry[] = [
   { id: '1', date: '2024-12-01', description: 'Opening Balance', debit: 0, credit: 0, balance: 100000 },
   { id: '2', date: '2024-12-01', description: 'Staff Salary Payment', debit: 45000, credit: 0, balance: 55000 },
   { id: '3', date: '2024-12-20', description: 'Equipment Repair', debit: 5000, credit: 0, balance: 50000 },
