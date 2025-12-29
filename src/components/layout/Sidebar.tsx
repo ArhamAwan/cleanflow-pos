@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -18,6 +19,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SearchDialog } from '@/components/SearchDialog';
+import { SettingsDialog } from '@/components/SettingsDialog';
+import { HelpDialog } from '@/components/HelpDialog';
 
 const mainNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'accountant', 'data_entry'] },
@@ -40,6 +44,9 @@ const settingsNavItems = [
 export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const filterByRole = (items: typeof mainNavItems) => 
     items.filter(item => user && item.roles.includes(user.role));
@@ -119,18 +126,32 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="border-t border-sidebar-border p-3 space-y-1">
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors">
+        <button 
+          onClick={() => setSearchOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors"
+        >
           <Search className="h-4 w-4" />
           Search
         </button>
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors">
+        <button 
+          onClick={() => setSettingsOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors"
+        >
           <Settings className="h-4 w-4" />
           Settings
         </button>
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors">
+        <button 
+          onClick={() => setHelpOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors"
+        >
           <HelpCircle className="h-4 w-4" />
           Get Help
         </button>
+
+        {/* Dialogs */}
+        <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <HelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
 
         {/* User Profile */}
         <div className="flex items-center gap-3 px-3 py-3 mt-2 rounded-lg bg-sidebar-accent/50">
