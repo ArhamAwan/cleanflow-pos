@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -24,6 +24,7 @@ import {
 import { mockExpenses, expenseCategories, formatCurrency } from '@/data/mockData';
 import { Expense } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useExpenses, useDatabaseInit } from '@/hooks/use-database';
 
 export default function Expenses() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,23 +33,53 @@ export default function Expenses() {
     category: '',
     amount: '',
     description: '',
-    method: 'cash',
+    method: 'cash' as 'cash' | 'bank',
     date: new Date().toISOString().split('T')[0],
   });
   const { toast } = useToast();
 
-  const filteredExpenses = mockExpenses.filter(expense =>
+  // Database hooks
+  const { isElectron } = useDatabaseInit();
+  const { expenses: dbExpenses, fetchExpenses, createExpense: dbCreateExpense } = useExpenses();
+
+  // Fetch expenses on mount
+  useEffect(() => {
+    if (isElectron) {
+      fetchExpenses();
+    }
+  }, [isElectron, fetchExpenses]);
+
+  // Use DB data if available, otherwise mock data
+  const expenses: Expense[] = isElectron && dbExpenses.length > 0 ? dbExpenses : mockExpenses;
+
+  const filteredExpenses = expenses.filter(expense =>
     expense.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
     expense.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalExpenses = mockExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  const handleSubmit = () => {
-    toast({
-      title: 'Expense Recorded',
-      description: `Expense of ${formatCurrency(Number(formData.amount))} recorded.`,
-    });
+  const handleSubmit = async () => {
+    if (isElectron) {
+      const result = await dbCreateExpense({
+        category: formData.category,
+        amount: Number(formData.amount),
+        description: formData.description,
+        method: formData.method,
+        date: formData.date,
+      });
+      if (result) {
+        toast({
+          title: 'Expense Recorded',
+          description: `Expense of ${formatCurrency(Number(formData.amount))} recorded.`,
+        });
+      }
+    } else {
+      toast({
+        title: 'Expense Recorded',
+        description: `Expense of ${formatCurrency(Number(formData.amount))} recorded.`,
+      });
+    }
     setIsModalOpen(false);
     setFormData({
       category: '',
@@ -176,7 +207,7 @@ export default function Expenses() {
             </div>
             <div className="space-y-2">
               <Label>Payment Method</Label>
-              <Select value={formData.method} onValueChange={(v) => setFormData({ ...formData, method: v })}>
+              <Select value={formData.method} onValueChange={(v: 'cash' | 'bank') => setFormData({ ...formData, method: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

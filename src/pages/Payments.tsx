@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -24,15 +24,16 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockPayments, mockCustomers, mockJobs, formatCurrency } from '@/data/mockData';
-import { Payment } from '@/types';
+import { Payment, Customer, Job } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { usePayments, useCustomers, useJobs, useDatabaseInit } from '@/hooks/use-database';
 
 export default function Payments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<'cash_in' | 'cash_out'>('cash_in');
   const [formData, setFormData] = useState({
     amount: '',
-    method: 'cash',
+    method: 'cash' as 'cash' | 'bank',
     customerId: '',
     jobId: '',
     description: '',
@@ -40,14 +41,52 @@ export default function Payments() {
   });
   const { toast } = useToast();
 
-  const cashInPayments = mockPayments.filter(p => p.type === 'cash_in');
-  const cashOutPayments = mockPayments.filter(p => p.type === 'cash_out');
+  // Database hooks
+  const { isElectron } = useDatabaseInit();
+  const { payments: dbPayments, fetchPayments, createPayment: dbCreatePayment } = usePayments();
+  const { customers: dbCustomers, fetchCustomers } = useCustomers();
+  const { jobs: dbJobs, fetchJobs } = useJobs();
 
-  const handleSubmit = () => {
-    toast({
-      title: 'Payment Recorded',
-      description: `${paymentType === 'cash_in' ? 'Cash In' : 'Cash Out'} of ${formatCurrency(Number(formData.amount))} recorded.`,
-    });
+  // Fetch data on mount
+  useEffect(() => {
+    if (isElectron) {
+      fetchPayments();
+      fetchCustomers();
+      fetchJobs();
+    }
+  }, [isElectron, fetchPayments, fetchCustomers, fetchJobs]);
+
+  // Use DB data if available, otherwise mock data
+  const payments: Payment[] = isElectron && dbPayments.length > 0 ? dbPayments : mockPayments;
+  const customers: Customer[] = isElectron && dbCustomers.length > 0 ? dbCustomers : mockCustomers;
+  const jobs: Job[] = isElectron && dbJobs.length > 0 ? dbJobs : mockJobs;
+
+  const cashInPayments = payments.filter(p => p.type === 'cash_in');
+  const cashOutPayments = payments.filter(p => p.type === 'cash_out');
+
+  const handleSubmit = async () => {
+    if (isElectron) {
+      const result = await dbCreatePayment({
+        type: paymentType,
+        amount: Number(formData.amount),
+        method: formData.method,
+        customerId: formData.customerId || undefined,
+        jobId: formData.jobId || undefined,
+        description: formData.description,
+        date: formData.date,
+      });
+      if (result) {
+        toast({
+          title: 'Payment Recorded',
+          description: `${paymentType === 'cash_in' ? 'Cash In' : 'Cash Out'} of ${formatCurrency(Number(formData.amount))} recorded.`,
+        });
+      }
+    } else {
+      toast({
+        title: 'Payment Recorded',
+        description: `${paymentType === 'cash_in' ? 'Cash In' : 'Cash Out'} of ${formatCurrency(Number(formData.amount))} recorded.`,
+      });
+    }
     setIsModalOpen(false);
     setFormData({
       amount: '',
@@ -152,7 +191,7 @@ export default function Payments() {
         <TabsContent value="all" className="mt-4">
           <DataTable
             columns={columns}
-            data={mockPayments}
+            data={payments}
             keyExtractor={(payment) => payment.id}
           />
         </TabsContent>
@@ -196,7 +235,7 @@ export default function Payments() {
             </div>
             <div className="space-y-2">
               <Label>Payment Method</Label>
-              <Select value={formData.method} onValueChange={(v) => setFormData({ ...formData, method: v })}>
+              <Select value={formData.method} onValueChange={(v: 'cash' | 'bank') => setFormData({ ...formData, method: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -215,7 +254,7 @@ export default function Payments() {
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockCustomers.map(customer => (
+                      {customers.map(customer => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}
                         </SelectItem>
@@ -230,7 +269,7 @@ export default function Payments() {
                       <SelectValue placeholder="Select job" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockJobs.filter(j => j.paymentStatus !== 'paid').map(job => (
+                      {jobs.filter(j => j.paymentStatus !== 'paid').map(job => (
                         <SelectItem key={job.id} value={job.id}>
                           {job.id} - {job.customerName}
                         </SelectItem>
