@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, CreditCard, Printer } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -23,10 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { mockJobs, mockCustomers, mockServiceTypes, formatCurrency } from '@/data/mockData';
-import { Job } from '@/types';
+import { Job, Customer, ServiceType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { JobReceipt } from '@/components/receipts/JobReceipt';
 import { useReactToPrint } from 'react-to-print';
+import { useJobs, useCustomers, useServiceTypes, usePayments, useDatabaseInit } from '@/hooks/use-database';
 
 export default function Jobs() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,34 +41,92 @@ export default function Jobs() {
     date: new Date().toISOString().split('T')[0],
   });
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
+
+  // Database hooks
+  const { isElectron } = useDatabaseInit();
+  const { jobs: dbJobs, fetchJobs, createJob: dbCreateJob } = useJobs();
+  const { customers: dbCustomers, fetchCustomers } = useCustomers();
+  const { serviceTypes: dbServiceTypes, fetchServiceTypes } = useServiceTypes();
+  const { createPayment: dbCreatePayment } = usePayments();
+
+  // Fetch data on mount
+  useEffect(() => {
+    if (isElectron) {
+      fetchJobs();
+      fetchCustomers();
+      fetchServiceTypes();
+    }
+  }, [isElectron, fetchJobs, fetchCustomers, fetchServiceTypes]);
+
+  // Use DB data if available, otherwise mock data
+  const jobs: Job[] = isElectron && dbJobs.length > 0 ? dbJobs : mockJobs;
+  const customers: Customer[] = isElectron && dbCustomers.length > 0 ? dbCustomers : mockCustomers;
+  const serviceTypes: ServiceType[] = isElectron && dbServiceTypes.length > 0 ? dbServiceTypes : mockServiceTypes;
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
     documentTitle: `Receipt-${selectedJob?.id || 'job'}`,
   });
 
-  const filteredJobs = mockJobs.filter(job =>
+  const filteredJobs = jobs.filter(job =>
     job.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddJob = () => {
-    toast({
-      title: 'Job Created',
-      description: 'New job has been created successfully.',
-    });
+  const handleAddJob = async () => {
+    const selectedService = serviceTypes.find(s => s.id === formData.serviceId);
+    
+    if (isElectron && selectedService) {
+      const result = await dbCreateJob({
+        customerId: formData.customerId,
+        serviceId: formData.serviceId,
+        date: formData.date,
+        amount: selectedService.price,
+      });
+      if (result) {
+        toast({
+          title: 'Job Created',
+          description: 'New job has been created successfully.',
+        });
+      }
+    } else {
+      toast({
+        title: 'Job Created',
+        description: 'New job has been created successfully.',
+      });
+    }
     setIsAddModalOpen(false);
     setFormData({ customerId: '', serviceId: '', date: new Date().toISOString().split('T')[0] });
   };
 
-  const handleAddPayment = () => {
-    toast({
-      title: 'Payment Recorded',
-      description: `Payment of PKR ${paymentAmount} has been recorded.`,
-    });
+  const handleAddPayment = async () => {
+    if (isElectron && selectedJob) {
+      const result = await dbCreatePayment({
+        type: 'cash_in',
+        amount: Number(paymentAmount),
+        method: paymentMethod,
+        customerId: selectedJob.customerId,
+        jobId: selectedJob.id,
+        description: `Payment for ${selectedJob.serviceName}`,
+        date: new Date().toISOString().split('T')[0],
+      });
+      if (result) {
+        toast({
+          title: 'Payment Recorded',
+          description: `Payment of PKR ${paymentAmount} has been recorded.`,
+        });
+        fetchJobs(); // Refresh jobs to update payment status
+      }
+    } else {
+      toast({
+        title: 'Payment Recorded',
+        description: `Payment of PKR ${paymentAmount} has been recorded.`,
+      });
+    }
     setIsPaymentModalOpen(false);
     setSelectedJob(null);
     setPaymentAmount('');
@@ -164,7 +223,7 @@ export default function Jobs() {
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCustomers.map(customer => (
+                  {customers.map(customer => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
@@ -179,7 +238,7 @@ export default function Jobs() {
                   <SelectValue placeholder="Select service" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockServiceTypes.map(service => (
+                  {serviceTypes.map(service => (
                     <SelectItem key={service.id} value={service.id}>
                       {service.name} - {formatCurrency(service.price)}
                     </SelectItem>
@@ -244,7 +303,7 @@ export default function Jobs() {
               </div>
               <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <Select defaultValue="cash">
+                <Select value={paymentMethod} onValueChange={(v: 'cash' | 'bank') => setPaymentMethod(v)}>
                   <SelectTrigger className="glass-input">
                     <SelectValue />
                   </SelectTrigger>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Edit } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { mockCustomers, formatCurrency } from '@/data/mockData';
 import { Customer } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useCustomers, useDatabaseInit } from '@/hooks/use-database';
 
 export default function Customers() {
   const navigate = useNavigate();
@@ -28,25 +29,65 @@ export default function Customers() {
   const [formData, setFormData] = useState({ name: '', phone: '', address: '' });
   const { toast } = useToast();
 
-  const filteredCustomers = mockCustomers.filter(customer =>
+  // Database hooks
+  const { isElectron } = useDatabaseInit();
+  const { 
+    customers: dbCustomers, 
+    isLoading, 
+    fetchCustomers, 
+    createCustomer: dbCreateCustomer,
+    updateCustomer: dbUpdateCustomer 
+  } = useCustomers();
+
+  // Fetch customers on mount
+  useEffect(() => {
+    if (isElectron) {
+      fetchCustomers();
+    }
+  }, [isElectron, fetchCustomers]);
+
+  // Use DB data if available, otherwise mock data
+  const customers: Customer[] = isElectron && dbCustomers.length > 0 ? dbCustomers : mockCustomers;
+
+  const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.phone.includes(searchQuery)
   );
 
-  const handleAddCustomer = () => {
-    toast({
-      title: 'Customer Added',
-      description: `${formData.name} has been added successfully.`,
-    });
+  const handleAddCustomer = async () => {
+    if (isElectron) {
+      const result = await dbCreateCustomer(formData);
+      if (result) {
+        toast({
+          title: 'Customer Added',
+          description: `${formData.name} has been added successfully.`,
+        });
+      }
+    } else {
+      toast({
+        title: 'Customer Added',
+        description: `${formData.name} has been added successfully.`,
+      });
+    }
     setIsAddModalOpen(false);
     setFormData({ name: '', phone: '', address: '' });
   };
 
-  const handleEditCustomer = () => {
-    toast({
-      title: 'Customer Updated',
-      description: `${formData.name} has been updated successfully.`,
-    });
+  const handleEditCustomer = async () => {
+    if (isElectron && selectedCustomer) {
+      const result = await dbUpdateCustomer(selectedCustomer.id, formData);
+      if (result) {
+        toast({
+          title: 'Customer Updated',
+          description: `${formData.name} has been updated successfully.`,
+        });
+      }
+    } else {
+      toast({
+        title: 'Customer Updated',
+        description: `${formData.name} has been updated successfully.`,
+      });
+    }
     setIsEditModalOpen(false);
     setSelectedCustomer(null);
     setFormData({ name: '', phone: '', address: '' });
