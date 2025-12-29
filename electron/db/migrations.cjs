@@ -37,7 +37,7 @@ function runMigrations() {
   ];
   
   const checkMigration = db.prepare('SELECT id FROM migrations WHERE name = ?');
-  const insertMigration = db.prepare('INSERT INTO migrations (name, executed_at) VALUES (?, datetime("now"))');
+  const insertMigration = db.prepare("INSERT INTO migrations (name, executed_at) VALUES (?, datetime('now'))");
   
   for (const migration of migrations) {
     const existing = checkMigration.get(migration.name);
@@ -79,6 +79,8 @@ function createUsersTable(db) {
   
   db.exec('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_users_sync_status ON users(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)');
 }
 
 /**
@@ -102,6 +104,8 @@ function createCustomersTable(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_customers_sync_status ON customers(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_customers_device_id ON customers(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at)');
 }
 
 /**
@@ -124,6 +128,8 @@ function createServiceTypesTable(db) {
   
   db.exec('CREATE INDEX IF NOT EXISTS idx_service_types_name ON service_types(name)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_service_types_sync_status ON service_types(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_service_types_device_id ON service_types(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_service_types_created_at ON service_types(created_at)');
 }
 
 /**
@@ -154,6 +160,8 @@ function createJobsTable(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_date ON jobs(date)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_payment_status ON jobs(payment_status)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_sync_status ON jobs(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_device_id ON jobs(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at)');
 }
 
 /**
@@ -184,6 +192,8 @@ function createPaymentsTable(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(date)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_payments_type ON payments(type)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_payments_sync_status ON payments(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_payments_device_id ON payments(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at)');
 }
 
 /**
@@ -208,6 +218,8 @@ function createExpensesTable(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_expenses_sync_status ON expenses(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_expenses_device_id ON expenses(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_expenses_created_at ON expenses(created_at)');
 }
 
 /**
@@ -248,6 +260,8 @@ function createLedgerEntriesTable(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_ledger_entries_customer_id ON ledger_entries(customer_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_ledger_entries_date ON ledger_entries(date)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_ledger_entries_sync_status ON ledger_entries(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_ledger_entries_device_id ON ledger_entries(device_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_ledger_entries_created_at ON ledger_entries(created_at)');
   
   // Create trigger to prevent updates on ledger_entries
   db.exec(`
@@ -291,6 +305,7 @@ function createAuditLogsTable(db) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_table_record ON audit_logs(table_name, record_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_sync_status ON audit_logs(sync_status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_device_id ON audit_logs(device_id)');
 }
 
 /**

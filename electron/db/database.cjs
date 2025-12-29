@@ -77,8 +77,19 @@ function getDatabase() {
 }
 
 /**
+ * Validate UUID format
+ * @param {string} uuid - UUID string to validate
+ * @returns {boolean} True if valid UUID format
+ */
+function isValidUUID(uuid) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
+/**
  * Initialize or retrieve the device ID
  * Device ID is used for sync identification
+ * CRITICAL: Device ID must never change once set - it identifies this PC permanently
  */
 function initializeDeviceId() {
   try {
@@ -95,32 +106,57 @@ function initializeDeviceId() {
     // Try to get existing device ID
     const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get('device_id');
     
-    if (row) {
-      deviceId = row.value;
+    if (row && row.value) {
+      // Validate existing device ID format
+      if (isValidUUID(row.value)) {
+        deviceId = row.value;
+        console.log('Device ID loaded:', deviceId);
+      } else {
+        // Invalid format - regenerate (shouldn't happen, but safety check)
+        console.warn('Invalid device ID format detected, regenerating...');
+        deviceId = uuidv4();
+        db.prepare(
+          "UPDATE app_settings SET value = ?, updated_at = datetime('now') WHERE key = ?"
+        ).run(deviceId, 'device_id');
+        console.log('Device ID regenerated:', deviceId);
+      }
     } else {
-      // Generate new device ID
+      // Generate new device ID (first run on this PC)
       deviceId = uuidv4();
       db.prepare(
-        'INSERT INTO app_settings (key, value, created_at, updated_at) VALUES (?, ?, datetime("now"), datetime("now"))'
+        "INSERT INTO app_settings (key, value, created_at, updated_at) VALUES (?, ?, datetime('now'), datetime('now'))"
       ).run('device_id', deviceId);
+      console.log('Device ID generated (first run):', deviceId);
     }
     
-    console.log('Device ID:', deviceId);
+    // Final validation
+    if (!isValidUUID(deviceId)) {
+      throw new Error('Failed to generate valid device ID');
+    }
   } catch (error) {
     console.error('Error initializing device ID:', error);
-    // Fallback to generated ID
+    // Fallback to generated ID (but log warning)
     deviceId = uuidv4();
+    console.warn('Using fallback device ID:', deviceId);
   }
 }
 
 /**
  * Get the current device ID
+ * Ensures device ID is initialized and valid
  * @returns {string} Device UUID
+ * @throws {Error} If device ID cannot be obtained
  */
 function getDeviceId() {
   if (!deviceId) {
     getDatabase(); // This will initialize deviceId
   }
+  
+  // Final safety check
+  if (!deviceId || !isValidUUID(deviceId)) {
+    throw new Error('Device ID is not properly initialized');
+  }
+  
   return deviceId;
 }
 

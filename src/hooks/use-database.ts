@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useElectron } from './use-electron';
 import type {
   Customer,
@@ -19,30 +19,33 @@ export function useDatabaseInit() {
   const [error, setError] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function init() {
-      if (!isElectron || !electronAPI) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const result = await electronAPI.initDatabase();
-        if (result.success && result.data) {
-          setDeviceId(result.data.deviceId);
-          setIsInitialized(true);
-        } else {
-          setError(result.error || 'Failed to initialize database');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setIsLoading(false);
-      }
+  const initDatabase = useCallback(async () => {
+    if (!isElectron || !electronAPI) {
+      setIsLoading(false);
+      return;
     }
 
-    init();
+    try {
+      const result = await electronAPI.db.init();
+      if (result.success && result.data) {
+        setDeviceId(result.data.deviceId);
+        setIsInitialized(true);
+      } else {
+        setError(result.error || 'Failed to initialize database');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
   }, [isElectron, electronAPI]);
+
+  // Auto-initialize on mount
+  useState(() => {
+    if (isElectron && electronAPI) {
+      initDatabase();
+    }
+  });
 
   return { isInitialized, isLoading, error, deviceId, isElectron };
 }
@@ -63,7 +66,7 @@ export function useCustomers() {
     setError(null);
 
     try {
-      const result = await electronAPI.getCustomers({ search });
+      const result = await electronAPI.customers.getAll({ search });
       if (result.success && result.data) {
         setCustomers(result.data as Customer[]);
       } else {
@@ -80,8 +83,9 @@ export function useCustomers() {
     if (!isElectron || !electronAPI) return null;
 
     try {
-      const result = await electronAPI.createCustomer(data);
+      const result = await electronAPI.customers.create(data);
       if (result.success && result.data) {
+        // Refresh the customers list after creating
         await fetchCustomers();
         return result.data as Customer;
       }
@@ -96,8 +100,9 @@ export function useCustomers() {
     if (!isElectron || !electronAPI) return null;
 
     try {
-      const result = await electronAPI.updateCustomer(id, data);
+      const result = await electronAPI.customers.update(id, data);
       if (result.success && result.data) {
+        // Refresh the customers list after updating
         await fetchCustomers();
         return result.data as Customer;
       }
@@ -133,7 +138,7 @@ export function useJobs() {
     setError(null);
 
     try {
-      const result = await electronAPI.getJobs(filters);
+      const result = await electronAPI.jobs.getAll(filters);
       if (result.success && result.data) {
         setJobs(result.data as Job[]);
       } else {
@@ -156,7 +161,7 @@ export function useJobs() {
     if (!isElectron || !electronAPI) return null;
 
     try {
-      const result = await electronAPI.createJob(data);
+      const result = await electronAPI.jobs.create(data);
       if (result.success && result.data) {
         await fetchJobs();
         return result.data as Job;
@@ -193,7 +198,7 @@ export function usePayments() {
     setError(null);
 
     try {
-      const result = await electronAPI.getPayments(filters);
+      const result = await electronAPI.payments.getAll(filters);
       if (result.success && result.data) {
         setPayments(result.data as Payment[]);
       } else {
@@ -218,7 +223,7 @@ export function usePayments() {
     if (!isElectron || !electronAPI) return null;
 
     try {
-      const result = await electronAPI.createPayment(data);
+      const result = await electronAPI.payments.create(data);
       if (result.success && result.data) {
         await fetchPayments();
         return result.data as Payment;
@@ -255,7 +260,7 @@ export function useExpenses() {
     setError(null);
 
     try {
-      const result = await electronAPI.getExpenses(filters);
+      const result = await electronAPI.expenses.getAll(filters);
       if (result.success && result.data) {
         setExpenses(result.data as Expense[]);
       } else {
@@ -278,7 +283,7 @@ export function useExpenses() {
     if (!isElectron || !electronAPI) return null;
 
     try {
-      const result = await electronAPI.createExpense(data);
+      const result = await electronAPI.expenses.create(data);
       if (result.success && result.data) {
         await fetchExpenses();
         return result.data as Expense;
@@ -309,7 +314,7 @@ export function useServiceTypes() {
     setError(null);
 
     try {
-      const result = await electronAPI.getServiceTypes();
+      const result = await electronAPI.serviceTypes.getAll();
       if (result.success && result.data) {
         setServiceTypes(result.data as ServiceType[]);
       } else {
@@ -322,7 +327,27 @@ export function useServiceTypes() {
     }
   }, [isElectron, electronAPI]);
 
-  return { serviceTypes, isLoading, error, fetchServiceTypes };
+  const createServiceType = useCallback(async (data: {
+    name: string;
+    description?: string;
+    price: number;
+  }) => {
+    if (!isElectron || !electronAPI) return null;
+
+    try {
+      const result = await electronAPI.serviceTypes.create(data);
+      if (result.success && result.data) {
+        await fetchServiceTypes();
+        return result.data as ServiceType;
+      }
+      throw new Error(result.error || 'Failed to create service type');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return null;
+    }
+  }, [isElectron, electronAPI, fetchServiceTypes]);
+
+  return { serviceTypes, isLoading, error, fetchServiceTypes, createServiceType };
 }
 
 /**
@@ -344,7 +369,7 @@ export function useLedger() {
     setError(null);
 
     try {
-      const result = await electronAPI.getCashLedger(filters);
+      const result = await electronAPI.ledgers.getCash(filters);
       if (result.success && result.data) {
         setEntries(result.data as LedgerEntry[]);
       } else {
@@ -367,7 +392,7 @@ export function useLedger() {
     setError(null);
 
     try {
-      const result = await electronAPI.getCustomerLedgerEntries(customerId, filters);
+      const result = await electronAPI.ledgers.getCustomer(customerId, filters);
       if (result.success && result.data) {
         setEntries(result.data as LedgerEntry[]);
       } else {
@@ -398,7 +423,7 @@ export function useReports() {
     setError(null);
 
     try {
-      const result = await electronAPI.getDailyReport(date);
+      const result = await electronAPI.reports.getDaily(date);
       if (result.success && result.data) {
         return result.data;
       }
@@ -418,7 +443,7 @@ export function useReports() {
     setError(null);
 
     try {
-      const result = await electronAPI.getMonthlyReport(year, month);
+      const result = await electronAPI.reports.getMonthly(year, month);
       if (result.success && result.data) {
         return result.data;
       }

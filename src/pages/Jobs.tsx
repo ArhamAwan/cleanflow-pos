@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockJobs, mockCustomers, mockServiceTypes, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
 import { Job, Customer, ServiceType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { JobReceipt } from '@/components/receipts/JobReceipt';
@@ -61,10 +61,10 @@ export default function Jobs() {
     }
   }, [isElectron, fetchJobs, fetchCustomers, fetchServiceTypes]);
 
-  // Use DB data if available, otherwise mock data
-  const jobs: Job[] = isElectron && dbJobs.length > 0 ? dbJobs : mockJobs;
-  const customers: Customer[] = isElectron && dbCustomers.length > 0 ? dbCustomers : mockCustomers;
-  const serviceTypes: ServiceType[] = isElectron && dbServiceTypes.length > 0 ? dbServiceTypes : mockServiceTypes;
+  // Use DB data only
+  const jobs: Job[] = isElectron ? dbJobs : [];
+  const customers: Customer[] = isElectron ? dbCustomers : [];
+  const serviceTypes: ServiceType[] = isElectron ? dbServiceTypes : [];
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
@@ -210,7 +210,7 @@ export default function Jobs() {
 
       {/* Add Job Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="glass-card">
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>Add New Job</DialogTitle>
             <DialogDescription>Create a new service job for a customer.</DialogDescription>
@@ -265,7 +265,7 @@ export default function Jobs() {
 
       {/* Add Payment Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="glass-card">
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
@@ -323,7 +323,7 @@ export default function Jobs() {
 
       {/* Receipt Modal */}
       <Dialog open={isReceiptModalOpen} onOpenChange={setIsReceiptModalOpen}>
-        <DialogContent className="glass-card max-w-lg">
+        <DialogContent className="glass-card-static max-w-lg">
           <DialogHeader>
             <DialogTitle>Job Receipt</DialogTitle>
             <DialogDescription>

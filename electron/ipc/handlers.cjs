@@ -22,7 +22,7 @@ function registerHandlers() {
     try {
       getDatabase();
       runMigrations();
-      return { success: true, deviceId: getDeviceId() };
+      return { success: true, data: { deviceId: getDeviceId() } };
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -30,7 +30,50 @@ function registerHandlers() {
 
   ipcMain.handle('db:status', async () => {
     try {
-      return { success: true, deviceId: getDeviceId(), status: 'connected' };
+      return { success: true, data: { deviceId: getDeviceId(), status: 'connected' } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Test/Sync utility handlers
+  ipcMain.handle('test:get-device-id', async () => {
+    try {
+      const deviceId = getDeviceId();
+      return { success: true, data: { deviceId } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('test:get-sync-stats', async () => {
+    try {
+      const syncUtils = require('../db/sync-utils.cjs');
+      const stats = syncUtils.getSyncStatistics();
+      const totalPending = syncUtils.getTotalPendingCount();
+      return { success: true, data: { stats, totalPending } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('test:get-pending-records', async (_, { tableName, limit = 100 }) => {
+    try {
+      const syncUtils = require('../db/sync-utils.cjs');
+      const records = syncUtils.getPendingRecords(tableName, limit);
+      const count = syncUtils.getPendingCount(tableName);
+      return { success: true, data: { records, count } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('test:get-all-pending', async (_, limit = 100) => {
+    try {
+      const syncUtils = require('../db/sync-utils.cjs');
+      const allPending = syncUtils.getAllPendingRecords(limit);
+      const totalPending = syncUtils.getTotalPendingCount();
+      return { success: true, data: { allPending, totalPending } };
     } catch (error) {
       return { success: false, error: error.message };
     }

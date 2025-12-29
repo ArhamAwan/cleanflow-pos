@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Plus, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable } from '@/components/shared/DataTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from "react";
+import { Plus, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { DataTable } from "@/components/shared/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,37 +13,48 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockPayments, mockCustomers, mockJobs, formatCurrency } from '@/data/mockData';
-import { Payment, Customer, Job } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { usePayments, useCustomers, useJobs, useDatabaseInit } from '@/hooks/use-database';
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency } from "@/data/mockData";
+import { Payment, Customer, Job } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+  usePayments,
+  useCustomers,
+  useJobs,
+  useDatabaseInit,
+} from "@/hooks/use-database";
 
 export default function Payments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [paymentType, setPaymentType] = useState<'cash_in' | 'cash_out'>('cash_in');
+  const [paymentType, setPaymentType] = useState<"cash_in" | "cash_out">(
+    "cash_in"
+  );
   const [formData, setFormData] = useState({
-    amount: '',
-    method: 'cash' as 'cash' | 'bank',
-    customerId: '',
-    jobId: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
+    amount: "",
+    method: "cash" as "cash" | "bank",
+    customerId: "",
+    jobId: "",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
   });
   const { toast } = useToast();
 
   // Database hooks
   const { isElectron } = useDatabaseInit();
-  const { payments: dbPayments, fetchPayments, createPayment: dbCreatePayment } = usePayments();
+  const {
+    payments: dbPayments,
+    fetchPayments,
+    createPayment: dbCreatePayment,
+  } = usePayments();
   const { customers: dbCustomers, fetchCustomers } = useCustomers();
   const { jobs: dbJobs, fetchJobs } = useJobs();
 
@@ -56,13 +67,13 @@ export default function Payments() {
     }
   }, [isElectron, fetchPayments, fetchCustomers, fetchJobs]);
 
-  // Use DB data if available, otherwise mock data
-  const payments: Payment[] = isElectron && dbPayments.length > 0 ? dbPayments : mockPayments;
-  const customers: Customer[] = isElectron && dbCustomers.length > 0 ? dbCustomers : mockCustomers;
-  const jobs: Job[] = isElectron && dbJobs.length > 0 ? dbJobs : mockJobs;
+  // Use DB data only (empty arrays when not in Electron)
+  const payments: Payment[] = isElectron ? dbPayments : [];
+  const customers: Customer[] = isElectron ? dbCustomers : [];
+  const jobs: Job[] = isElectron ? dbJobs : [];
 
-  const cashInPayments = payments.filter(p => p.type === 'cash_in');
-  const cashOutPayments = payments.filter(p => p.type === 'cash_out');
+  const cashInPayments = payments.filter((p) => p.type === "cash_in");
+  const cashOutPayments = payments.filter((p) => p.type === "cash_out");
 
   const handleSubmit = async () => {
     if (isElectron) {
@@ -77,60 +88,71 @@ export default function Payments() {
       });
       if (result) {
         toast({
-          title: 'Payment Recorded',
-          description: `${paymentType === 'cash_in' ? 'Cash In' : 'Cash Out'} of ${formatCurrency(Number(formData.amount))} recorded.`,
+          title: "Payment Recorded",
+          description: `${
+            paymentType === "cash_in" ? "Cash In" : "Cash Out"
+          } of ${formatCurrency(Number(formData.amount))} recorded.`,
         });
       }
     } else {
       toast({
-        title: 'Payment Recorded',
-        description: `${paymentType === 'cash_in' ? 'Cash In' : 'Cash Out'} of ${formatCurrency(Number(formData.amount))} recorded.`,
+        title: "Payment Recorded",
+        description: `${
+          paymentType === "cash_in" ? "Cash In" : "Cash Out"
+        } of ${formatCurrency(Number(formData.amount))} recorded.`,
       });
     }
     setIsModalOpen(false);
     setFormData({
-      amount: '',
-      method: 'cash',
-      customerId: '',
-      jobId: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
+      amount: "",
+      method: "cash",
+      customerId: "",
+      jobId: "",
+      description: "",
+      date: new Date().toISOString().split("T")[0],
     });
   };
 
-  const openModal = (type: 'cash_in' | 'cash_out') => {
+  const openModal = (type: "cash_in" | "cash_out") => {
     setPaymentType(type);
     setIsModalOpen(true);
   };
 
   const columns = [
-    { key: 'id', header: 'Payment ID' },
-    { key: 'description', header: 'Description' },
-    { key: 'date', header: 'Date' },
-    { 
-      key: 'method', 
-      header: 'Method',
+    { key: "id", header: "Payment ID" },
+    { key: "description", header: "Description" },
+    { key: "date", header: "Date" },
+    {
+      key: "method",
+      header: "Method",
       render: (payment: Payment) => (
         <span className="px-2 py-1 bg-muted rounded text-xs font-medium uppercase">
           {payment.method}
         </span>
-      )
+      ),
     },
-    { 
-      key: 'amount', 
-      header: 'Amount',
+    {
+      key: "amount",
+      header: "Amount",
       render: (payment: Payment) => (
-        <span className={payment.type === 'cash_in' ? 'text-success font-medium' : 'text-destructive font-medium'}>
-          {payment.type === 'cash_in' ? '+' : '-'}{formatCurrency(payment.amount)}
+        <span
+          className={
+            payment.type === "cash_in"
+              ? "text-success font-medium"
+              : "text-destructive font-medium"
+          }
+        >
+          {payment.type === "cash_in" ? "+" : "-"}
+          {formatCurrency(payment.amount)}
         </span>
-      )
+      ),
     },
   ];
 
   return (
     <MainLayout>
-      <PageHeader 
-        title="Payments" 
+      <PageHeader
+        title="Payments"
         description="Record and track cash inflows and outflows"
       />
 
@@ -144,13 +166,15 @@ export default function Payments() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-success">
-              {formatCurrency(cashInPayments.reduce((sum, p) => sum + p.amount, 0))}
+              {formatCurrency(
+                cashInPayments.reduce((sum, p) => sum + p.amount, 0)
+              )}
             </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="mt-3"
-              onClick={() => openModal('cash_in')}
+              onClick={() => openModal("cash_in")}
             >
               <Plus className="h-4 w-4 mr-1" />
               Record Cash In
@@ -167,13 +191,15 @@ export default function Payments() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-destructive">
-              {formatCurrency(cashOutPayments.reduce((sum, p) => sum + p.amount, 0))}
+              {formatCurrency(
+                cashOutPayments.reduce((sum, p) => sum + p.amount, 0)
+              )}
             </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="mt-3"
-              onClick={() => openModal('cash_out')}
+              onClick={() => openModal("cash_out")}
             >
               <Plus className="h-4 w-4 mr-1" />
               Record Cash Out
@@ -213,10 +239,10 @@ export default function Payments() {
 
       {/* Payment Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>
-              {paymentType === 'cash_in' ? 'Record Cash In' : 'Record Cash Out'}
+              {paymentType === "cash_in" ? "Record Cash In" : "Record Cash Out"}
             </DialogTitle>
             <DialogDescription>
               Enter the payment details below.
@@ -229,13 +255,20 @@ export default function Payments() {
                 id="amount"
                 type="number"
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: e.target.value })
+                }
                 placeholder="Enter amount"
               />
             </div>
             <div className="space-y-2">
               <Label>Payment Method</Label>
-              <Select value={formData.method} onValueChange={(v: 'cash' | 'bank') => setFormData({ ...formData, method: v })}>
+              <Select
+                value={formData.method}
+                onValueChange={(v: "cash" | "bank") =>
+                  setFormData({ ...formData, method: v })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -245,16 +278,21 @@ export default function Payments() {
                 </SelectContent>
               </Select>
             </div>
-            {paymentType === 'cash_in' && (
+            {paymentType === "cash_in" && (
               <>
                 <div className="space-y-2">
                   <Label>Customer (Optional)</Label>
-                  <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
+                  <Select
+                    value={formData.customerId}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, customerId: v })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map(customer => (
+                      {customers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}
                         </SelectItem>
@@ -264,16 +302,23 @@ export default function Payments() {
                 </div>
                 <div className="space-y-2">
                   <Label>Linked Job (Optional)</Label>
-                  <Select value={formData.jobId} onValueChange={(v) => setFormData({ ...formData, jobId: v })}>
+                  <Select
+                    value={formData.jobId}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, jobId: v })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select job" />
                     </SelectTrigger>
                     <SelectContent>
-                      {jobs.filter(j => j.paymentStatus !== 'paid').map(job => (
-                        <SelectItem key={job.id} value={job.id}>
-                          {job.id} - {job.customerName}
-                        </SelectItem>
-                      ))}
+                      {jobs
+                        .filter((j) => j.paymentStatus !== "paid")
+                        .map((job) => (
+                          <SelectItem key={job.id} value={job.id}>
+                            {job.id} - {job.customerName}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -284,7 +329,9 @@ export default function Payments() {
               <Input
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Enter description"
               />
             </div>
@@ -294,7 +341,9 @@ export default function Payments() {
                 id="date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
               />
             </div>
             <DialogFooter>

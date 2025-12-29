@@ -8,23 +8,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { mockJobs, mockPayments, mockExpenses, mockCustomers, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel } from '@/lib/exportUtils';
+import { useJobs, usePayments, useExpenses, useCustomers, useDatabaseInit } from '@/hooks/use-database';
+import { useEffect } from 'react';
 
 export default function Reports() {
   const { toast } = useToast();
-  const [dateFrom, setDateFrom] = useState('2024-12-01');
-  const [dateTo, setDateTo] = useState('2024-12-31');
+  const [dateFrom, setDateFrom] = useState(new Date().toISOString().split('T')[0]);
+  const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
+
+  const { isElectron } = useDatabaseInit();
+  const { jobs: dbJobs, fetchJobs } = useJobs();
+  const { payments: dbPayments, fetchPayments } = usePayments();
+  const { expenses: dbExpenses, fetchExpenses } = useExpenses();
+  const { customers: dbCustomers, fetchCustomers } = useCustomers();
+
+  useEffect(() => {
+    if (isElectron) {
+      fetchJobs({ startDate: dateFrom, endDate: dateTo });
+      fetchPayments({ startDate: dateFrom, endDate: dateTo });
+      fetchExpenses({ startDate: dateFrom, endDate: dateTo });
+      fetchCustomers();
+    }
+  }, [isElectron, dateFrom, dateTo, fetchJobs, fetchPayments, fetchExpenses, fetchCustomers]);
 
   // Filter data by date range
   const filterByDate = <T extends { date: string }>(items: T[]) => 
     items.filter(item => item.date >= dateFrom && item.date <= dateTo);
 
   // Daily Report Data (filtered)
-  const filteredJobs = filterByDate(mockJobs);
-  const filteredPayments = filterByDate(mockPayments);
-  const filteredExpenses = filterByDate(mockExpenses);
+  const filteredJobs = isElectron ? filterByDate(dbJobs) : [];
+  const filteredPayments = isElectron ? filterByDate(dbPayments) : [];
+  const filteredExpenses = isElectron ? filterByDate(dbExpenses) : [];
 
   const totalCashIn = filteredPayments.filter(p => p.type === 'cash_in').reduce((sum, p) => sum + p.amount, 0);
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -32,7 +49,7 @@ export default function Reports() {
 
   // Monthly Report Data
   const monthlyRevenue = filteredJobs.reduce((sum, j) => sum + j.amount, 0);
-  const outstandingReceivables = mockCustomers.reduce((sum, c) => sum + c.outstandingBalance, 0);
+  const outstandingReceivables = isElectron ? dbCustomers.reduce((sum, c) => sum + c.outstandingBalance, 0) : 0;
   const profitLoss = monthlyRevenue - totalExpenses;
 
   const handlePrint = () => {
@@ -77,19 +94,25 @@ export default function Reports() {
   };
 
   const setQuickDate = (range: 'today' | 'week' | 'month') => {
-    const today = '2024-12-28'; // Using mock data date
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
     switch (range) {
       case 'today':
-        setDateFrom(today);
-        setDateTo(today);
+        setDateFrom(todayStr);
+        setDateTo(todayStr);
         break;
       case 'week':
-        setDateFrom('2024-12-22');
-        setDateTo(today);
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        setDateFrom(weekAgo.toISOString().split('T')[0]);
+        setDateTo(todayStr);
         break;
       case 'month':
-        setDateFrom('2024-12-01');
-        setDateTo('2024-12-31');
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        setDateFrom(monthAgo.toISOString().split('T')[0]);
+        setDateTo(todayStr);
         break;
     }
   };

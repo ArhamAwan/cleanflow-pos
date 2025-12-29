@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { mockCustomers, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
 import { Customer } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomers, useDatabaseInit } from '@/hooks/use-database';
@@ -46,8 +46,8 @@ export default function Customers() {
     }
   }, [isElectron, fetchCustomers]);
 
-  // Use DB data if available, otherwise mock data
-  const customers: Customer[] = isElectron && dbCustomers.length > 0 ? dbCustomers : mockCustomers;
+  // Use DB data only
+  const customers: Customer[] = isElectron ? dbCustomers : [];
 
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,42 +55,58 @@ export default function Customers() {
   );
 
   const handleAddCustomer = async () => {
-    if (isElectron) {
-      const result = await dbCreateCustomer(formData);
-      if (result) {
-        toast({
-          title: 'Customer Added',
-          description: `${formData.name} has been added successfully.`,
-        });
-      }
-    } else {
+    if (!isElectron) {
+      toast({
+        title: 'Error',
+        description: 'Database not available. Please run in Electron.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const result = await dbCreateCustomer(formData);
+    if (result) {
       toast({
         title: 'Customer Added',
         description: `${formData.name} has been added successfully.`,
       });
+      setIsAddModalOpen(false);
+      setFormData({ name: '', phone: '', address: '' });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to add customer.',
+        variant: 'destructive',
+      });
     }
-    setIsAddModalOpen(false);
-    setFormData({ name: '', phone: '', address: '' });
   };
 
   const handleEditCustomer = async () => {
-    if (isElectron && selectedCustomer) {
-      const result = await dbUpdateCustomer(selectedCustomer.id, formData);
-      if (result) {
-        toast({
-          title: 'Customer Updated',
-          description: `${formData.name} has been updated successfully.`,
-        });
-      }
-    } else {
+    if (!isElectron || !selectedCustomer) {
+      toast({
+        title: 'Error',
+        description: 'Database not available. Please run in Electron.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const result = await dbUpdateCustomer(selectedCustomer.id, formData);
+    if (result) {
       toast({
         title: 'Customer Updated',
         description: `${formData.name} has been updated successfully.`,
       });
+      setIsEditModalOpen(false);
+      setSelectedCustomer(null);
+      setFormData({ name: '', phone: '', address: '' });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to update customer.',
+        variant: 'destructive',
+      });
     }
-    setIsEditModalOpen(false);
-    setSelectedCustomer(null);
-    setFormData({ name: '', phone: '', address: '' });
   };
 
   const openEditModal = (customer: Customer) => {
@@ -132,44 +148,6 @@ export default function Customers() {
     }
   ];
 
-  const CustomerForm = ({ onSubmit, submitText }: { onSubmit: () => void, submitText: string }) => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Customer Name</Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Enter customer name"
-          className="glass-input"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          placeholder="Enter phone number"
-          className="glass-input"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          placeholder="Enter address"
-          className="glass-input"
-        />
-      </div>
-      <DialogFooter>
-        <Button onClick={onSubmit} className="bg-gradient-to-r from-primary to-secondary">{submitText}</Button>
-      </DialogFooter>
-    </div>
-  );
-
   return (
     <MainLayout>
       <PageHeader 
@@ -203,23 +181,91 @@ export default function Customers() {
 
       {/* Add Customer Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="glass-card">
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
             <DialogDescription>Enter the customer details below.</DialogDescription>
           </DialogHeader>
-          <CustomerForm onSubmit={handleAddCustomer} submitText="Add Customer" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-name">Customer Name</Label>
+              <Input
+                id="add-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter customer name"
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-phone">Phone</Label>
+              <Input
+                id="add-phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="Enter phone number"
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-address">Address</Label>
+              <Input
+                id="add-address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Enter address"
+                className="glass-input"
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleAddCustomer} className="bg-gradient-to-r from-primary to-secondary">Add Customer</Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Customer Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="glass-card">
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>Update the customer details below.</DialogDescription>
           </DialogHeader>
-          <CustomerForm onSubmit={handleEditCustomer} submitText="Save Changes" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Customer Name</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter customer name"
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input
+                id="edit-phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="Enter phone number"
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input
+                id="edit-address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Enter address"
+                className="glass-input"
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleEditCustomer} className="bg-gradient-to-r from-primary to-secondary">Save Changes</Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </MainLayout>

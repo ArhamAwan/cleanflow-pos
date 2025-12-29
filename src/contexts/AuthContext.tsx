@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
-import { mockUsers } from '@/data/mockData';
 
 interface AuthContextType {
   user: User | null;
@@ -11,14 +10,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Default admin user for development
+const DEFAULT_ADMIN: User = {
+  id: 'admin-1',
+  name: 'Admin User',
+  email: 'admin@cleanflow.local',
+  role: 'admin',
+  isActive: true,
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const login = (email: string, password: string): boolean => {
-    // Mock login - in production this would validate against backend
-    const foundUser = mockUsers.find(u => u.email === email && u.isActive);
-    if (foundUser && password === 'password123') {
-      setUser(foundUser);
+    // Simple login - accepts any password for now
+    // In production, this would validate against database
+    if (email === DEFAULT_ADMIN.email || password) {
+      setUser(DEFAULT_ADMIN);
       return true;
     }
     return false;

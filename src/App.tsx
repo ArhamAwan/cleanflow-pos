@@ -16,6 +16,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import ServiceCatalog from "./pages/ServiceCatalog";
 import CustomerLedger from "./pages/CustomerLedger";
+import TestDatabase from "./pages/TestDatabase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/service-catalog" element={<ServiceCatalog />} />
               <Route path="/users" element={<Users />} />
+              <Route path="/test-database" element={<TestDatabase />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

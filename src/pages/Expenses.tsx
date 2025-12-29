@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockExpenses, expenseCategories, formatCurrency } from '@/data/mockData';
+import { expenseCategories, formatCurrency } from '@/data/mockData';
 import { Expense } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useExpenses, useDatabaseInit } from '@/hooks/use-database';
@@ -49,8 +49,8 @@ export default function Expenses() {
     }
   }, [isElectron, fetchExpenses]);
 
-  // Use DB data if available, otherwise mock data
-  const expenses: Expense[] = isElectron && dbExpenses.length > 0 ? dbExpenses : mockExpenses;
+  // Use DB data only
+  const expenses: Expense[] = isElectron ? dbExpenses : [];
 
   const filteredExpenses = expenses.filter(expense =>
     expense.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -165,7 +165,7 @@ export default function Expenses() {
 
       {/* Add Expense Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>Add New Expense</DialogTitle>
             <DialogDescription>Record a new business expense.</DialogDescription>

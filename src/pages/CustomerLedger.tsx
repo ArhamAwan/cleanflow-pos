@@ -7,9 +7,11 @@ import { DataTable } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { mockCustomers, mockJobs, mockPayments, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel } from '@/lib/exportUtils';
+import { useCustomers, useJobs, usePayments, useDatabaseInit } from '@/hooks/use-database';
+import { useEffect } from 'react';
 
 interface CustomerTransaction {
   id: string;
@@ -28,7 +30,20 @@ export default function CustomerLedger() {
   const [dateFrom, setDateFrom] = useState('2024-12-01');
   const [dateTo, setDateTo] = useState('2024-12-31');
 
-  const customer = mockCustomers.find(c => c.id === customerId);
+  const { isElectron } = useDatabaseInit();
+  const { customers: dbCustomers, fetchCustomers } = useCustomers();
+  const { jobs: dbJobs, fetchJobs } = useJobs();
+  const { payments: dbPayments, fetchPayments } = usePayments();
+
+  useEffect(() => {
+    if (isElectron) {
+      fetchCustomers();
+      fetchJobs({ customerId });
+      fetchPayments({ customerId });
+    }
+  }, [isElectron, customerId, fetchCustomers, fetchJobs, fetchPayments]);
+
+  const customer = isElectron ? dbCustomers.find(c => c.id === customerId) : null;
 
   if (!customer) {
     return (
@@ -44,8 +59,8 @@ export default function CustomerLedger() {
   }
 
   // Generate ledger entries from jobs and payments
-  const customerJobs = mockJobs.filter(j => j.customerId === customerId);
-  const customerPayments = mockPayments.filter(p => p.customerId === customerId);
+  const customerJobs = isElectron ? dbJobs.filter(j => j.customerId === customerId) : [];
+  const customerPayments = isElectron ? dbPayments.filter(p => p.customerId === customerId) : [];
 
   let runningBalance = 0;
   const transactions: CustomerTransaction[] = [];

@@ -6,138 +6,327 @@ const { contextBridge, ipcRenderer } = require('electron');
  * This is the ONLY bridge between the React UI and Electron main process
  */
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  // Platform information
-  platform: process.platform,
-  version: process.env.npm_package_version || '1.0.0',
+// Log that preload script has loaded
+console.log('✅ Preload script executing...');
+console.log('✅ contextBridge available:', typeof contextBridge !== 'undefined');
+console.log('✅ ipcRenderer available:', typeof ipcRenderer !== 'undefined');
 
-  // ==================== DATABASE ====================
-  
-  /** Initialize database */
-  initDatabase: () => ipcRenderer.invoke('db:init'),
-  
-  /** Get database status */
-  getDbStatus: () => ipcRenderer.invoke('db:status'),
+// Expose protected methods that allow the renderer process to use
+// the ipcRenderer without exposing the entire object
+try {
+  contextBridge.exposeInMainWorld('electronAPI', {
+  /**
+   * Database operations
+   */
+  db: {
+    init: async () => {
+      try {
+        return await ipcRenderer.invoke('db:init');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    status: async () => {
+      try {
+        return await ipcRenderer.invoke('db:status');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== CUSTOMERS ====================
-  
-  /** Create a new customer */
-  createCustomer: (data) => ipcRenderer.invoke('customers:create', data),
-  
-  /** Update an existing customer */
-  updateCustomer: (id, data) => ipcRenderer.invoke('customers:update', { id, data }),
-  
-  /** Get all customers */
-  getCustomers: (filters) => ipcRenderer.invoke('customers:get-all', filters),
-  
-  /** Get customer by ID */
-  getCustomerById: (id) => ipcRenderer.invoke('customers:get-by-id', id),
-  
-  /** Get customer with ledger entries */
-  getCustomerLedger: (id) => ipcRenderer.invoke('customers:get-ledger', id),
+  /**
+   * Customer operations
+   */
+  customers: {
+    create: async (data) => {
+      try {
+        return await ipcRenderer.invoke('customers:create', data);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    update: async (id, data) => {
+      try {
+        return await ipcRenderer.invoke('customers:update', { id, data });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('customers:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getById: async (id) => {
+      try {
+        return await ipcRenderer.invoke('customers:get-by-id', id);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getLedger: async (id) => {
+      try {
+        return await ipcRenderer.invoke('customers:get-ledger', id);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== JOBS ====================
-  
-  /** Create a new job */
-  createJob: (data) => ipcRenderer.invoke('jobs:create', data),
-  
-  /** Update an existing job */
-  updateJob: (id, data) => ipcRenderer.invoke('jobs:update', { id, data }),
-  
-  /** Get all jobs */
-  getJobs: (filters) => ipcRenderer.invoke('jobs:get-all', filters),
-  
-  /** Get job by ID */
-  getJobById: (id) => ipcRenderer.invoke('jobs:get-by-id', id),
+  /**
+   * Job operations
+   */
+  jobs: {
+    create: async (data) => {
+      try {
+        return await ipcRenderer.invoke('jobs:create', data);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    update: async (id, data) => {
+      try {
+        return await ipcRenderer.invoke('jobs:update', { id, data });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('jobs:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getById: async (id) => {
+      try {
+        return await ipcRenderer.invoke('jobs:get-by-id', id);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== PAYMENTS ====================
-  
-  /** Create a new payment */
-  createPayment: (data) => ipcRenderer.invoke('payments:create', data),
-  
-  /** Get all payments */
-  getPayments: (filters) => ipcRenderer.invoke('payments:get-all', filters),
-  
-  /** Get payments by job ID */
-  getPaymentsByJob: (jobId) => ipcRenderer.invoke('payments:get-by-job', jobId),
+  /**
+   * Payment operations
+   */
+  payments: {
+    create: async (data) => {
+      try {
+        return await ipcRenderer.invoke('payments:create', data);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('payments:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getByJob: async (jobId) => {
+      try {
+        return await ipcRenderer.invoke('payments:get-by-job', jobId);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== EXPENSES ====================
-  
-  /** Create a new expense */
-  createExpense: (data) => ipcRenderer.invoke('expenses:create', data),
-  
-  /** Update an existing expense */
-  updateExpense: (id, data) => ipcRenderer.invoke('expenses:update', { id, data }),
-  
-  /** Get all expenses */
-  getExpenses: (filters) => ipcRenderer.invoke('expenses:get-all', filters),
+  /**
+   * Expense operations
+   */
+  expenses: {
+    create: async (data) => {
+      try {
+        return await ipcRenderer.invoke('expenses:create', data);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    update: async (id, data) => {
+      try {
+        return await ipcRenderer.invoke('expenses:update', { id, data });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('expenses:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== LEDGERS ====================
-  
-  /** Get cash ledger entries */
-  getCashLedger: (filters) => ipcRenderer.invoke('ledgers:get-cash', filters),
-  
-  /** Get customer ledger entries */
-  getCustomerLedgerEntries: (customerId, filters) => 
-    ipcRenderer.invoke('ledgers:get-customer', { customerId, filters }),
-  
-  /** Get all ledger entries */
-  getAllLedgerEntries: (filters) => ipcRenderer.invoke('ledgers:get-all', filters),
+  /**
+   * Ledger operations
+   */
+  ledgers: {
+    getCash: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('ledgers:get-cash', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getCustomer: async (customerId, filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('ledgers:get-customer', { customerId, filters });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('ledgers:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== REPORTS ====================
-  
-  /** Get daily report */
-  getDailyReport: (date) => ipcRenderer.invoke('reports:daily', date),
-  
-  /** Get monthly report */
-  getMonthlyReport: (year, month) => ipcRenderer.invoke('reports:monthly', { year, month }),
-  
-  /** Get cash flow report */
-  getCashFlowReport: (startDate, endDate) => 
-    ipcRenderer.invoke('reports:cash-flow', { startDate, endDate }),
+  /**
+   * Report operations
+   */
+  reports: {
+    getDaily: async (date) => {
+      try {
+        return await ipcRenderer.invoke('reports:daily', date);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getMonthly: async (year, month) => {
+      try {
+        return await ipcRenderer.invoke('reports:monthly', { year, month });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getCashFlow: async (startDate, endDate) => {
+      try {
+        return await ipcRenderer.invoke('reports:cash-flow', { startDate, endDate });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== SERVICE TYPES ====================
-  
-  /** Get all service types */
-  getServiceTypes: (filters) => ipcRenderer.invoke('service-types:get-all', filters),
-  
-  /** Create a new service type */
-  createServiceType: (data) => ipcRenderer.invoke('service-types:create', data),
+  /**
+   * Service type operations
+   */
+  serviceTypes: {
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('service-types:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    create: async (data) => {
+      try {
+        return await ipcRenderer.invoke('service-types:create', data);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== USERS ====================
-  
-  /** Get all users */
-  getUsers: (filters) => ipcRenderer.invoke('users:get-all', filters),
-  
-  /** Create a new user */
-  createUser: (data) => ipcRenderer.invoke('users:create', data),
+  /**
+   * User operations
+   */
+  users: {
+    getAll: async (filters = {}) => {
+      try {
+        return await ipcRenderer.invoke('users:get-all', filters);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    create: async (data) => {
+      try {
+        return await ipcRenderer.invoke('users:create', data);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
 
-  // ==================== LEGACY (for compatibility) ====================
-  
-  /** Synchronize data (placeholder for future sync) */
+  /**
+   * Legacy methods (kept for backward compatibility)
+   */
   syncNow: async () => {
     try {
-      const result = await ipcRenderer.invoke('sync-now');
+      const result = await ipcRenderer.invoke('db:status');
       return result;
     } catch (error) {
-      console.error('Sync error:', error);
       return { success: false, error: error.message };
     }
   },
 
-  /** Get application status */
   getAppStatus: async () => {
     try {
-      const result = await ipcRenderer.invoke('get-app-status');
+      const result = await ipcRenderer.invoke('db:status');
       return result;
     } catch (error) {
-      console.error('Status error:', error);
       return { status: 'error', error: error.message };
     }
   },
-});
 
-// Log that preload script has loaded (only in development)
-if (process.env.NODE_ENV === 'development') {
-  console.log('Electron preload script loaded with full API');
+  /**
+   * Test/Sync utility operations
+   */
+  test: {
+    getDeviceId: async () => {
+      try {
+        return await ipcRenderer.invoke('test:get-device-id');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getSyncStats: async () => {
+      try {
+        return await ipcRenderer.invoke('test:get-sync-stats');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getPendingRecords: async (tableName, limit = 100) => {
+      try {
+        return await ipcRenderer.invoke('test:get-pending-records', { tableName, limit });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getAllPending: async (limit = 100) => {
+      try {
+        return await ipcRenderer.invoke('test:get-all-pending', limit);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
+
+  /**
+   * Platform information (useful for UI adjustments)
+   */
+  platform: process.platform,
+  
+  /**
+   * App version (from package.json)
+   */
+  version: process.env.npm_package_version || '1.0.0',
+  });
+  
+  console.log('✅ electronAPI exposed via contextBridge');
+  console.log('✅ Electron preload script loaded successfully');
+} catch (error) {
+  console.error('❌ Error exposing electronAPI:', error);
+  console.error('❌ Error details:', error.stack);
 }

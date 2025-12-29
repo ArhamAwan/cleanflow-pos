@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -23,11 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockUsers } from '@/data/mockData';
 import { User, UserRole } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { useDatabaseInit } from '@/hooks/use-database';
 
 export default function Users() {
   const { user } = useAuth();
@@ -38,19 +38,52 @@ export default function Users() {
     role: 'data_entry' as UserRole,
   });
   const { toast } = useToast();
+  const { isElectron } = useDatabaseInit();
+  const [users, setUsers] = useState<User[]>([]);
 
   // Only admin can access this page
   if (user?.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleCreateUser = () => {
-    toast({
-      title: 'User Created',
-      description: `${formData.name} has been created successfully.`,
-    });
-    setIsModalOpen(false);
-    setFormData({ name: '', email: '', role: 'data_entry' });
+  useEffect(() => {
+    if (isElectron && window.electronAPI) {
+      window.electronAPI.users.getAll().then(result => {
+        if (result.success && result.data) {
+          setUsers(result.data as User[]);
+        }
+      });
+    }
+  }, [isElectron]);
+
+  const handleCreateUser = async () => {
+    if (!isElectron || !window.electronAPI) {
+      toast({
+        title: 'Error',
+        description: 'Database not available. Please run in Electron.',
+      });
+      return;
+    }
+
+    const result = await window.electronAPI.users.create(formData);
+    if (result.success) {
+      toast({
+        title: 'User Created',
+        description: `${formData.name} has been created successfully.`,
+      });
+      setIsModalOpen(false);
+      setFormData({ name: '', email: '', role: 'data_entry' });
+      // Refresh users list
+      const refreshResult = await window.electronAPI.users.getAll();
+      if (refreshResult.success && refreshResult.data) {
+        setUsers(refreshResult.data as User[]);
+      }
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to create user.',
+      });
+    }
   };
 
   const handleToggleStatus = (userId: string, currentStatus: boolean) => {
@@ -119,13 +152,13 @@ export default function Users() {
 
       <DataTable
         columns={columns}
-        data={mockUsers}
+        data={users}
         keyExtractor={(u) => u.id}
       />
 
       {/* Create User Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
+        <DialogContent className="glass-card-static">
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
             <DialogDescription>Add a new user to the system.</DialogDescription>

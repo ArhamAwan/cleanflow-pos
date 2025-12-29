@@ -17,6 +17,10 @@ function createWindow() {
   // In production: app.isPackaged will be true
   const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
 
+  const preloadPath = path.join(__dirname, 'preload.cjs');
+  console.log('📄 Preload script path:', preloadPath);
+  console.log('📄 Preload script exists:', require('fs').existsSync(preloadPath));
+  
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -28,7 +32,7 @@ function createWindow() {
       // Security: Disable node integration in renderer process
       nodeIntegration: false,
       // Security: Preload script runs in isolated context
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: preloadPath,
     },
     // Optional: Show window only when ready to prevent white flash
     show: false,
@@ -43,6 +47,21 @@ function createWindow() {
     if (isDev) {
       mainWindow.webContents.openDevTools();
     }
+  });
+
+  // Debug: Log when preload script finishes loading
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('✅ Page finished loading');
+    // Check if electronAPI is available in the page
+    mainWindow.webContents.executeJavaScript(`
+      console.log('🔍 Checking window.electronAPI:', typeof window.electronAPI !== 'undefined');
+      if (typeof window.electronAPI !== 'undefined') {
+        console.log('✅ window.electronAPI available');
+        console.log('✅ Available APIs:', Object.keys(window.electronAPI));
+      } else {
+        console.error('❌ window.electronAPI NOT FOUND');
+      }
+    `).catch(err => console.error('Error checking electronAPI:', err));
   });
   
   if (isDev) {

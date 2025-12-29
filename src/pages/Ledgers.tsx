@@ -9,22 +9,37 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { mockCashLedger, mockCustomers, mockExpenses, formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/data/mockData';
+import { useLedger, useCustomers, useExpenses, useDatabaseInit } from '@/hooks/use-database';
+import { useEffect } from 'react';
 
 export default function Ledgers() {
+  const { isElectron } = useDatabaseInit();
+  const { entries: cashLedgerEntries, fetchCashLedger } = useLedger();
+  const { customers: dbCustomers, fetchCustomers } = useCustomers();
+  const { expenses: dbExpenses, fetchExpenses } = useExpenses();
+
+  useEffect(() => {
+    if (isElectron) {
+      fetchCashLedger();
+      fetchCustomers();
+      fetchExpenses();
+    }
+  }, [isElectron, fetchCashLedger, fetchCustomers, fetchExpenses]);
+
   // Generate customer ledger entries
-  const customerLedgerEntries = mockCustomers.map((customer, index) => ({
+  const customerLedgerEntries = isElectron ? dbCustomers.map((customer, index) => ({
     id: `CL-${index + 1}`,
-    date: '2024-12-28',
+    date: customer.updatedAt || customer.createdAt,
     description: customer.name,
     debit: customer.outstandingBalance,
     credit: 0,
     balance: customer.outstandingBalance,
-  }));
+  })) : [];
 
   // Generate expense ledger entries
-  const expenseLedgerEntries = mockExpenses.map((expense, index) => {
-    const runningBalance = mockExpenses
+  const expenseLedgerEntries = isElectron ? dbExpenses.map((expense, index) => {
+    const runningBalance = dbExpenses
       .slice(0, index + 1)
       .reduce((sum, e) => sum + e.amount, 0);
     return {
@@ -35,7 +50,7 @@ export default function Ledgers() {
       credit: 0,
       balance: runningBalance,
     };
-  });
+  }) : [];
 
   interface SimpleLedgerEntry {
     id: string;
@@ -105,12 +120,21 @@ export default function Ledgers() {
               <div>
                 <p className="text-sm text-muted-foreground">Current Cash Balance</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(mockCashLedger[mockCashLedger.length - 1].balance)}
+                  {cashLedgerEntries.length > 0 
+                    ? formatCurrency(cashLedgerEntries[cashLedgerEntries.length - 1].balance || 0)
+                    : formatCurrency(0)}
                 </p>
               </div>
             </div>
           </div>
-          <LedgerTable entries={mockCashLedger} />
+          <LedgerTable entries={cashLedgerEntries.map(e => ({
+            id: e.id,
+            date: e.date,
+            description: e.description,
+            debit: e.debit,
+            credit: e.credit,
+            balance: e.balance,
+          }))} />
         </TabsContent>
 
         <TabsContent value="customer" className="mt-4">
@@ -119,7 +143,7 @@ export default function Ledgers() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Outstanding Receivables</p>
                 <p className="text-2xl font-bold text-destructive">
-                  {formatCurrency(mockCustomers.reduce((sum, c) => sum + c.outstandingBalance, 0))}
+                  {formatCurrency(isElectron ? dbCustomers.reduce((sum, c) => sum + c.outstandingBalance, 0) : 0)}
                 </p>
               </div>
             </div>
@@ -133,7 +157,7 @@ export default function Ledgers() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Expenses</p>
                 <p className="text-2xl font-bold text-destructive">
-                  {formatCurrency(mockExpenses.reduce((sum, e) => sum + e.amount, 0))}
+                  {formatCurrency(isElectron ? dbExpenses.reduce((sum, e) => sum + e.amount, 0) : 0)}
                 </p>
               </div>
             </div>

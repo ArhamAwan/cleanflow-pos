@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, CreditCard, Receipt, Wallet } from 'lucide-react';
+import { Briefcase, CreditCard, Receipt, Wallet, Database } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { SummaryCard } from '@/components/shared/SummaryCard';
-import { mockJobs, mockPayments, mockExpenses, formatCurrency } from '@/data/mockData';
+import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { useJobs, usePayments, useExpenses, useDatabaseInit } from '@/hooks/use-database';
 import { Job, Payment, Expense } from '@/types';
@@ -31,22 +32,22 @@ export default function Dashboard() {
     }
   }, [isElectron, fetchJobs, fetchPayments, fetchExpenses]);
 
-  // Use DB data if available, otherwise mock data
-  const jobs: Job[] = isElectron && dbJobs.length > 0 ? dbJobs : mockJobs;
-  const payments: Payment[] = isElectron && dbPayments.length > 0 ? dbPayments : mockPayments;
-  const expenses: Expense[] = isElectron && dbExpenses.length > 0 ? dbExpenses : mockExpenses;
+  // Use DB data only
+  const jobs: Job[] = isElectron ? dbJobs : [];
+  const payments: Payment[] = isElectron ? dbPayments : [];
+  const expenses: Expense[] = isElectron ? dbExpenses : [];
 
   // Calculate today's stats
   const today = new Date().toISOString().split('T')[0];
-  const todayJobs = jobs.filter(job => job.date === today || job.date === '2024-12-28');
+  const todayJobs = jobs.filter(job => job.date === today);
   const todayJobsCount = todayJobs.length;
   
   const todayCashIn = payments
-    .filter(p => (p.date === today || p.date === '2024-12-28') && p.type === 'cash_in')
+    .filter(p => p.date === today && p.type === 'cash_in')
     .reduce((sum, p) => sum + p.amount, 0);
   
   const todayExpensesTotal = expenses
-    .filter(e => e.date === today || e.date === '2024-12-28')
+    .filter(e => e.date === today)
     .reduce((sum, e) => sum + e.amount, 0);
   
   const netCash = todayCashIn - todayExpensesTotal;
@@ -69,22 +70,35 @@ export default function Dashboard() {
           description="Business summary at a glance"
         />
         
-        {/* Time Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
-          {timeFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setTimeFilter(filter.value)}
-              className={cn(
-                'px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150',
-                timeFilter === filter.value
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          {/* Test Database Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/test-database')}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Test Database
+          </Button>
+          
+          {/* Time Filter Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            {timeFilters.map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => setTimeFilter(filter.value)}
+                className={cn(
+                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150',
+                  timeFilter === filter.value
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       
