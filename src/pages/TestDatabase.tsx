@@ -24,7 +24,7 @@ export default function TestDatabase() {
   // Check if Electron API is available
   useEffect(() => {
     const checkElectron = () => {
-      const hasElectron = typeof window !== 'undefined' && window.electronAPI;
+      const hasElectron = typeof window !== 'undefined' && !!window.electronAPI;
       setIsElectron(hasElectron);
       
       if (hasElectron) {
