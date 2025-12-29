@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CommandDialog,
@@ -57,7 +57,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={onOpenChange} modal={false}>
       <CommandInput placeholder="Search pages..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
