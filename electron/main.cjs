@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { fileURLToPath } = require('url');
+
+// Backend initialization
+const { initializeBackend, cleanupBackend } = require('./ipc/handlers.cjs');
 
 // Keep a global reference of the window object
 let mainWindow = null;
@@ -109,6 +111,10 @@ ipcMain.handle('get-app-status', async () => {
  * Initialize Electron app
  */
 app.whenReady().then(() => {
+  // Initialize SQLite backend before creating window
+  const backendReady = initializeBackend();
+  console.log('Backend ready:', backendReady);
+  
   createWindow();
 
   // macOS: Re-create window when dock icon is clicked
@@ -144,6 +150,6 @@ app.on('web-contents-created', (event, contents) => {
 
 // Handle app shutdown gracefully
 app.on('before-quit', () => {
-  // Clean up any resources if needed
+  cleanupBackend();
 });
 
