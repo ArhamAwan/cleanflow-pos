@@ -21,6 +21,9 @@ const {
   markAsFailed,
   getSyncStatistics,
 } = require("../db/sync-utils.cjs");
+const https = require("https");
+const http = require("http");
+const { URL } = require("url");
 
 // Sync configuration
 const SYNC_CONFIG = {
@@ -55,38 +58,78 @@ let lastSyncAt = null;
 let syncProgress = null;
 
 /**
- * Make HTTP request to sync server
+ * Make HTTP request to sync server using Node's http/https modules
  */
 async function fetchWithTimeout(url, options = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), SYNC_CONFIG.timeout);
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const client = urlObj.protocol === "https:" ? https : http;
+    const deviceId = getDeviceId();
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
+    const requestOptions = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === "https:" ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: options.method || "GET",
       headers: {
         "Content-Type": "application/json",
-        "X-Device-ID": getDeviceId(),
+        "X-Device-ID": deviceId,
         "X-Client-Timestamp": new Date().toISOString(),
         ...options.headers,
       },
-    });
+      timeout: SYNC_CONFIG.timeout,
+    };
 
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+    if (options.body) {
+      requestOptions.headers["Content-Length"] = Buffer.byteLength(
+        options.body
+      );
     }
 
-    return response.json();
-  } catch (error) {
-    clearTimeout(timeout);
-    throw error;
-  }
+    const req = client.request(requestOptions, (res) => {
+      let data = "";
+
+      res.on("data", (chunk) => {
+        data += chunk;
+      });
+
+      res.on("end", () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            resolve(data);
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(data);
+            reject(
+              new Error(
+                errorData.message || errorData.error || `HTTP ${res.statusCode}`
+              )
+            );
+          } catch (e) {
+            reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+          }
+        }
+      });
+    });
+
+    req.on("error", (error) => {
+      reject(error);
+    });
+
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Request timeout"));
+    });
+
+    if (options.body) {
+      req.write(options.body);
+    }
+
+    req.end();
+  });
 }
 
 /**
@@ -96,8 +139,13 @@ async function uploadTable(tableName) {
   const records = getPendingRecords(tableName, SYNC_CONFIG.batchSize);
 
   if (records.length === 0) {
+    console.log(`[Sync] No pending records for ${tableName}`);
     return { tableName, uploaded: 0, synced: 0, failed: 0 };
   }
+
+  console.log(
+    `[Sync] Uploading ${records.length} ${tableName} records to ${SYNC_CONFIG.serverUrl}`
+  );
 
   try {
     const result = await fetchWithTimeout(
@@ -107,6 +155,8 @@ async function uploadTable(tableName) {
         body: JSON.stringify({ tableName, records }),
       }
     );
+
+    console.log(`[Sync] Upload result for ${tableName}:`, result);
 
     // Mark synced records
     for (const syncedRecord of result.synced || []) {
@@ -128,6 +178,7 @@ async function uploadTable(tableName) {
     };
   } catch (error) {
     console.error(`Failed to upload ${tableName}:`, error.message);
+    console.error(`[Sync] Upload failed for ${tableName}:`, error);
     return {
       tableName,
       uploaded: records.length,
@@ -144,6 +195,12 @@ async function uploadTable(tableName) {
 async function downloadTable(tableName, since = null) {
   const db = getDatabase();
 
+  console.log(
+    `[Sync] Downloading ${tableName} from ${SYNC_CONFIG.serverUrl}${
+      since ? ` since ${since}` : ""
+    }`
+  );
+
   try {
     const params = new URLSearchParams({
       tableName,
@@ -157,6 +214,11 @@ async function downloadTable(tableName, since = null) {
     const result = await fetchWithTimeout(
       `${SYNC_CONFIG.serverUrl}/api/sync/download?${params}`
     );
+
+    console.log(`[Sync] Download result for ${tableName}:`, {
+      downloaded: result.records?.length || 0,
+      hasMore: result.hasMore,
+    });
 
     const records = result.records || [];
     let inserted = 0;
@@ -222,7 +284,7 @@ async function downloadTable(tableName, since = null) {
       nextCursor: result.nextCursor,
     };
   } catch (error) {
-    console.error(`Failed to download ${tableName}:`, error.message);
+    console.error(`[Sync] Download failed for ${tableName}:`, error);
     return {
       tableName,
       downloaded: 0,
@@ -238,9 +300,11 @@ async function downloadTable(tableName, since = null) {
  */
 async function fullSync() {
   if (isSyncing) {
+    console.log("[Sync] Sync already in progress, skipping");
     return { success: false, error: "Sync already in progress" };
   }
 
+  console.log("[Sync] Starting full sync...");
   isSyncing = true;
   syncProgress = {
     phase: "starting",
@@ -325,13 +389,19 @@ async function fullSync() {
     syncProgress.phase = "complete";
     syncProgress.completedAt = new Date().toISOString();
 
+    console.log("[Sync] Full sync completed:", {
+      totalUploaded: results.totalUploaded,
+      totalDownloaded: results.totalDownloaded,
+      errors: results.errors.length,
+    });
+
     return {
       success: true,
       ...results,
       lastSyncAt,
     };
   } catch (error) {
-    console.error("Full sync failed:", error);
+    console.error("[Sync] Full sync failed:", error);
     results.errors.push({ phase: "general", error: error.message });
 
     return {
@@ -341,6 +411,7 @@ async function fullSync() {
     };
   } finally {
     isSyncing = false;
+    console.log("[Sync] Sync process finished");
   }
 }
 
@@ -410,12 +481,15 @@ async function downloadNew() {
  * Check server health
  */
 async function checkServerHealth() {
+  console.log(`[Sync] Checking server health at ${SYNC_CONFIG.serverUrl}`);
   try {
     const result = await fetchWithTimeout(
       `${SYNC_CONFIG.serverUrl}/api/health`
     );
+    console.log(`[Sync] Server is online:`, result);
     return { online: true, ...result };
   } catch (error) {
+    console.error(`[Sync] Server health check failed:`, error);
     return { online: false, error: error.message };
   }
 }
