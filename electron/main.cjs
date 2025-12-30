@@ -78,8 +78,29 @@ function createWindow() {
   } else {
     // Production: Load from built files
     // Vite builds to 'dist' directory by default
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    mainWindow.loadFile(indexPath);
+    // In packaged app, __dirname points to app.asar/electron, so we need to go up one level
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    console.log('Loading production index from:', indexPath);
+    console.log('File exists:', require('fs').existsSync(indexPath));
+    
+    mainWindow.loadFile(indexPath).catch(err => {
+      console.error('Failed to load index.html:', err);
+      // Try alternative path (if app is not packaged)
+      const altPath = path.join(process.cwd(), 'dist', 'index.html');
+      console.log('Trying alternative path:', altPath);
+      mainWindow.loadFile(altPath).catch(err2 => {
+        console.error('Failed to load from alternative path:', err2);
+        // Show error to user
+        mainWindow.webContents.executeJavaScript(`
+          document.body.innerHTML = '<div style="padding: 20px; font-family: Arial;">
+            <h1>Error Loading Application</h1>
+            <p>Could not find index.html file.</p>
+            <p>Expected at: ${indexPath}</p>
+            <p>Please contact support.</p>
+          </div>';
+        `);
+      });
+    });
   }
 
   // Handle window closed
@@ -130,9 +151,26 @@ ipcMain.handle('get-app-status', async () => {
  * Initialize Electron app
  */
 app.whenReady().then(() => {
+  // Log platform info for debugging
+  console.log('Platform:', process.platform);
+  console.log('Architecture:', process.arch);
+  console.log('App path:', app.getAppPath());
+  console.log('User data path:', app.getPath('userData'));
+  console.log('Is packaged:', app.isPackaged);
+  
   // Initialize SQLite backend before creating window
-  const backendReady = initializeBackend();
-  console.log('Backend ready:', backendReady);
+  try {
+    const backendReady = initializeBackend();
+    console.log('Backend ready:', backendReady);
+  } catch (error) {
+    console.error('Failed to initialize backend:', error);
+    // Show error dialog
+    const { dialog } = require('electron');
+    dialog.showErrorBox(
+      'Initialization Error',
+      `Failed to initialize database:\n${error.message}\n\nCheck console for details.`
+    );
+  }
   
   createWindow();
 
@@ -159,10 +197,17 @@ app.on('web-contents-created', (event, contents) => {
   
   // Prevent navigation to external URLs
   contents.on('will-navigate', (event, navigationURL) => {
-    const parsedURL = new URL(navigationURL);
-    
-    if (parsedURL.origin !== 'http://localhost:8080' && !navigationURL.startsWith('file://')) {
-      event.preventDefault();
+    if (isDev) {
+      // In development, allow localhost
+      const parsedURL = new URL(navigationURL);
+      if (parsedURL.origin !== 'http://localhost:8080') {
+        event.preventDefault();
+      }
+    } else {
+      // In production, only allow file:// protocol
+      if (!navigationURL.startsWith('file://')) {
+        event.preventDefault();
+      }
     }
   });
 });

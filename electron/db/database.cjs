@@ -53,13 +53,25 @@ function getDatabase() {
     return db;
   }
 
-  ensureDataDirectory();
-  const dbPath = getDatabasePath();
-  
-  console.log('Opening database at:', dbPath);
-  
-  // Open database with WAL mode for crash safety
-  db = new Database(dbPath);
+  try {
+    ensureDataDirectory();
+    const dbPath = getDatabasePath();
+    
+    console.log('Opening database at:', dbPath);
+    console.log('Database directory exists:', require('fs').existsSync(path.dirname(dbPath)));
+    
+    // Open database with WAL mode for crash safety
+    db = new Database(dbPath);
+  } catch (error) {
+    console.error('Failed to open database:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      path: getDatabasePath(),
+      platform: process.platform
+    });
+    throw error;
+  }
   
   // Enable WAL mode for better crash recovery
   db.pragma('journal_mode = WAL');

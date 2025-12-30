@@ -31,3 +31,11 @@ out
 *.njsproj
 *.sln
 *.sw?
+
+# Database files (each PC has its own)
+data/cleanflow.db
+data/cleanflow.db-shm
+data/cleanflow.db-wal
+*.db
+*.db-shm
+*.db-wal

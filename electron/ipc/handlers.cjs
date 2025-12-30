@@ -12,6 +12,9 @@ const reportService = require('../services/reports.cjs');
 const serviceTypeService = require('../services/serviceTypes.cjs');
 const userService = require('../services/users.cjs');
 const auditService = require('../services/audit.cjs');
+const syncService = require('../services/sync.cjs');
+const syncQueue = require('../services/syncQueue.cjs');
+const dependencyResolver = require('../services/dependencyResolver.cjs');
 
 /**
  * Register all IPC handlers
@@ -306,6 +309,111 @@ function registerHandlers() {
   ipcMain.handle('users:create', async (_, data) => {
     try {
       const result = userService.createUser(data);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ========================================
+  // Sync handlers
+  // ========================================
+
+  ipcMain.handle('sync:full', async () => {
+    try {
+      const result = await syncService.fullSync();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:upload', async () => {
+    try {
+      const result = await syncService.uploadPending();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:download', async () => {
+    try {
+      const result = await syncService.downloadNew();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:status', async () => {
+    try {
+      const status = syncService.getSyncStatus();
+      return { success: true, data: status };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:check-server', async () => {
+    try {
+      const result = await syncService.checkServerHealth();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:set-server-url', async (_, url) => {
+    try {
+      syncService.setServerUrl(url);
+      dependencyResolver.setServerUrl(url);
+      return { success: true, data: { url } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:get-server-url', async () => {
+    try {
+      const url = syncService.getServerUrl();
+      return { success: true, data: { url } };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Sync queue handlers
+  ipcMain.handle('sync:queue-status', async () => {
+    try {
+      const stats = syncQueue.getQueueStats();
+      return { success: true, data: stats };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:queue-pending', async (_, { tableName, limit } = {}) => {
+    try {
+      const items = syncQueue.getPendingItems(tableName, limit);
+      return { success: true, data: items };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:queue-reset-failed', async (_, tableName = null) => {
+    try {
+      const result = syncQueue.resetFailedItems(tableName);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sync:queue-cleanup', async (_, daysOld = 7) => {
+    try {
+      const result = syncQueue.cleanupCompleted(daysOld);
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: error.message };

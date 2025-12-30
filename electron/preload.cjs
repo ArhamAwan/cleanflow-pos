@@ -314,6 +314,89 @@ try {
   },
 
   /**
+   * Sync operations
+   */
+  sync: {
+    fullSync: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:full');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    upload: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:upload');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    download: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:download');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getStatus: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:status');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    checkServer: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:check-server');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    setServerUrl: async (url) => {
+      try {
+        return await ipcRenderer.invoke('sync:set-server-url', url);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getServerUrl: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:get-server-url');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getQueueStatus: async () => {
+      try {
+        return await ipcRenderer.invoke('sync:queue-status');
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    getQueuePending: async (tableName, limit) => {
+      try {
+        return await ipcRenderer.invoke('sync:queue-pending', { tableName, limit });
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    resetFailedQueue: async (tableName) => {
+      try {
+        return await ipcRenderer.invoke('sync:queue-reset-failed', tableName);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    cleanupQueue: async (daysOld) => {
+      try {
+        return await ipcRenderer.invoke('sync:queue-cleanup', daysOld);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+  },
+
+  /**
    * Platform information (useful for UI adjustments)
    */
   platform: process.platform,

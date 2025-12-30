@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, CreditCard, Receipt, Wallet, Database } from 'lucide-react';
+import { Briefcase, CreditCard, Receipt, Wallet, Database, Cloud } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { SummaryCard } from '@/components/shared/SummaryCard';
@@ -71,6 +71,17 @@ export default function Dashboard() {
         />
         
         <div className="flex items-center gap-3">
+          {/* Sync Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/sync')}
+            className="flex items-center gap-2"
+          >
+            <Cloud className="h-4 w-4" />
+            Sync Status
+          </Button>
+          
           {/* Test Database Button */}
           <Button
             variant="outline"

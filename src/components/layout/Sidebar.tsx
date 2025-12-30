@@ -13,6 +13,7 @@ import {
   Settings,
   HelpCircle,
   Search,
+  Cloud,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ const reportingNavItems = [
 const settingsNavItems = [
   { path: '/service-catalog', label: 'Service Catalog', icon: Package, roles: ['admin'] },
   { path: '/users', label: 'Users', icon: UserCog, roles: ['admin'] },
+  { path: '/sync', label: 'Sync Status', icon: Cloud, roles: ['admin'] },
 ];
 
 export function Sidebar() {

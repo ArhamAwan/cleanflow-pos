@@ -120,6 +120,83 @@ export interface TestAPI {
 }
 
 /**
+ * Sync Status
+ */
+export interface SyncStatus {
+  isSyncing: boolean;
+  lastSyncAt: string | null;
+  progress: {
+    phase: string;
+    tables: Record<string, { phase: string; result?: Record<string, unknown> }>;
+    startedAt: string;
+    completedAt?: string;
+  } | null;
+  pendingRecords: number;
+  statistics: Record<string, {
+    PENDING: number;
+    SYNCED: number;
+    FAILED: number;
+  }>;
+}
+
+/**
+ * Sync Result
+ */
+export interface SyncResult {
+  success: boolean;
+  upload?: Record<string, {
+    tableName: string;
+    uploaded: number;
+    synced: number;
+    failed: number;
+    error?: string;
+  }>;
+  download?: Record<string, {
+    tableName: string;
+    downloaded: number;
+    inserted: number;
+    updated: number;
+    error?: string;
+  }>;
+  totalUploaded?: number;
+  totalDownloaded?: number;
+  errors?: Array<{ table: string; phase: string; error: string }>;
+  lastSyncAt?: string;
+  error?: string;
+}
+
+/**
+ * Queue Status
+ */
+export interface QueueStatus {
+  byTable: Record<string, Record<string, number>>;
+  byStatus: {
+    PENDING: number;
+    PROCESSING: number;
+    COMPLETED: number;
+    FAILED: number;
+  };
+  totalQueued: number;
+}
+
+/**
+ * Sync API
+ */
+export interface SyncAPI {
+  fullSync: () => Promise<APIResponse<SyncResult>>;
+  upload: () => Promise<APIResponse<SyncResult>>;
+  download: () => Promise<APIResponse<SyncResult>>;
+  getStatus: () => Promise<APIResponse<SyncStatus>>;
+  checkServer: () => Promise<APIResponse<{ online: boolean; error?: string }>>;
+  setServerUrl: (url: string) => Promise<APIResponse<{ url: string }>>;
+  getServerUrl: () => Promise<APIResponse<{ url: string }>>;
+  getQueueStatus: () => Promise<APIResponse<QueueStatus>>;
+  getQueuePending: (tableName?: string, limit?: number) => Promise<APIResponse<unknown[]>>;
+  resetFailedQueue: (tableName?: string) => Promise<APIResponse<{ reset: number }>>;
+  cleanupQueue: (daysOld?: number) => Promise<APIResponse<{ deleted: number }>>;
+}
+
+/**
  * Main Electron API interface
  */
 export interface ElectronAPI {
@@ -138,6 +215,9 @@ export interface ElectronAPI {
 
   // Test/Sync utility operations
   test: TestAPI;
+
+  // Sync operations
+  sync: SyncAPI;
 
   // Legacy methods (kept for backward compatibility)
   syncNow: () => Promise<APIResponse<{ deviceId: string; status: string }>>;

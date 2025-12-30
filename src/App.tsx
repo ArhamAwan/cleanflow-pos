@@ -17,6 +17,7 @@ import Users from "./pages/Users";
 import ServiceCatalog from "./pages/ServiceCatalog";
 import CustomerLedger from "./pages/CustomerLedger";
 import TestDatabase from "./pages/TestDatabase";
+import SyncStatus from "./pages/SyncStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/service-catalog" element={<ServiceCatalog />} />
               <Route path="/users" element={<Users />} />
               <Route path="/test-database" element={<TestDatabase />} />
+              <Route path="/sync" element={<SyncStatus />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
