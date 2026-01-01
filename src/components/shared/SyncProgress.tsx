@@ -88,24 +88,19 @@ export function SyncProgress({ onSyncComplete, compact = false }: SyncProgressPr
 
   const handleFullSync = async () => {
     if (!isElectron || isSyncing) {
-      console.log('[UI] Sync skipped:', { isElectron, isSyncing });
       return;
     }
     
-    console.log('[UI] Starting full sync...');
     setIsSyncing(true);
     try {
       const result = await window.electronAPI!.sync.fullSync();
-      console.log('[UI] Sync result:', result);
       if (result.success && result.data) {
         setLastResult(result.data);
         onSyncComplete?.(result.data);
       } else {
-        console.error('[UI] Sync failed:', result.error);
         setLastResult({ success: false, error: result.error } as any);
       }
     } catch (error) {
-      console.error('[UI] Sync exception:', error);
       setLastResult({ success: false, error: String(error) } as any);
     } finally {
       setIsSyncing(false);
@@ -114,24 +109,19 @@ export function SyncProgress({ onSyncComplete, compact = false }: SyncProgressPr
 
   const handleUpload = async () => {
     if (!isElectron || isSyncing) {
-      console.log('[UI] Upload skipped:', { isElectron, isSyncing });
       return;
     }
     
-    console.log('[UI] Starting upload...');
     setIsSyncing(true);
     try {
       const result = await window.electronAPI!.sync.upload();
-      console.log('[UI] Upload result:', result);
       if (result.success && result.data) {
         setLastResult(result.data);
         onSyncComplete?.(result.data);
       } else {
-        console.error('[UI] Upload failed:', result.error);
         setLastResult({ success: false, error: result.error } as any);
       }
     } catch (error) {
-      console.error('[UI] Upload exception:', error);
       setLastResult({ success: false, error: String(error) } as any);
     } finally {
       setIsSyncing(false);
@@ -140,24 +130,19 @@ export function SyncProgress({ onSyncComplete, compact = false }: SyncProgressPr
 
   const handleDownload = async () => {
     if (!isElectron || isSyncing) {
-      console.log('[UI] Download skipped:', { isElectron, isSyncing });
       return;
     }
     
-    console.log('[UI] Starting download...');
     setIsSyncing(true);
     try {
       const result = await window.electronAPI!.sync.download();
-      console.log('[UI] Download result:', result);
       if (result.success && result.data) {
         setLastResult(result.data);
         onSyncComplete?.(result.data);
       } else {
-        console.error('[UI] Download failed:', result.error);
         setLastResult({ success: false, error: result.error } as any);
       }
     } catch (error) {
-      console.error('[UI] Download exception:', error);
       setLastResult({ success: false, error: String(error) } as any);
     } finally {
       setIsSyncing(false);

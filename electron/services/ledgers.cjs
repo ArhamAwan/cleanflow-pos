@@ -1,10 +1,14 @@
-const { v4: uuidv4 } = require('uuid');
-const { getDatabase, getDeviceId, getCurrentTimestamp } = require('../db/database.cjs');
+const { v4: uuidv4 } = require("uuid");
+const {
+  getDatabase,
+  getDeviceId,
+  getCurrentTimestamp,
+} = require("../db/database.cjs");
 
 /**
  * Ledger Service
  * Handles IMMUTABLE ledger entries for double-entry bookkeeping
- * 
+ *
  * CRITICAL: Ledger entries can NEVER be deleted or modified.
  * Corrections must be done using ADJUSTMENT entries.
  */
@@ -13,23 +17,27 @@ const { getDatabase, getDeviceId, getCurrentTimestamp } = require('../db/databas
  * Entry types for ledger
  */
 const ENTRY_TYPES = {
-  JOB_CREATED: 'JOB_CREATED',           // Debit: customer owes money
-  PAYMENT_RECEIVED: 'PAYMENT_RECEIVED',  // Credit: customer paid
-  PAYMENT_MADE: 'PAYMENT_MADE',          // Debit: money paid out
-  EXPENSE_RECORDED: 'EXPENSE_RECORDED',  // Debit: business expense
-  ADJUSTMENT: 'ADJUSTMENT',              // Correction entry
-  OPENING_BALANCE: 'OPENING_BALANCE',    // Initial balance
+  JOB_CREATED: "JOB_CREATED", // Debit: customer owes money (from job)
+  INVOICE_CREATED: "INVOICE_CREATED", // Debit: customer owes money (from invoice)
+  PAYMENT_RECEIVED: "PAYMENT_RECEIVED", // Credit: customer paid
+  PAYMENT_MADE: "PAYMENT_MADE", // Debit: money paid out
+  EXPENSE_RECORDED: "EXPENSE_RECORDED", // Debit: business expense
+  ADJUSTMENT: "ADJUSTMENT", // Correction entry
+  OPENING_BALANCE: "OPENING_BALANCE", // Initial balance
 };
 
 /**
  * Reference types for linking entries to source records
  */
 const REFERENCE_TYPES = {
-  JOB: 'job',
-  PAYMENT: 'payment',
-  EXPENSE: 'expense',
-  CUSTOMER: 'customer',
-  SYSTEM: 'system',
+  JOB: "job",
+  PAYMENT: "payment",
+  EXPENSE: "expense",
+  CUSTOMER: "customer",
+  SYSTEM: "system",
+  INVOICE: "invoice",
+  ESTIMATE: "estimate",
+  CHALLAN: "challan",
 };
 
 /**
@@ -46,44 +54,55 @@ const REFERENCE_TYPES = {
  * @param {Object} [db] - Database instance (for transactions)
  * @returns {Object} Created ledger entry
  */
-function createLedgerEntry({ 
-  entryType, 
-  referenceType, 
-  referenceId, 
-  customerId, 
-  description, 
-  debit = 0, 
-  credit = 0,
-  date 
-}, db = null) {
+function createLedgerEntry(
+  {
+    entryType,
+    referenceType,
+    referenceId,
+    customerId,
+    description,
+    debit = 0,
+    credit = 0,
+    date,
+  },
+  db = null
+) {
   const database = db || getDatabase();
   const deviceId = getDeviceId();
   const now = getCurrentTimestamp();
   const id = uuidv4();
-  
+
   // Calculate running balance for customer ledger if customerId is provided
   let balance = 0;
   if (customerId) {
-    const lastEntry = database.prepare(`
+    const lastEntry = database
+      .prepare(
+        `
       SELECT balance FROM ledger_entries 
       WHERE customer_id = ? 
       ORDER BY created_at DESC, id DESC 
       LIMIT 1
-    `).get(customerId);
-    
+    `
+      )
+      .get(customerId);
+
     balance = (lastEntry?.balance || 0) + debit - credit;
   } else {
     // For cash ledger, calculate overall balance
-    const lastEntry = database.prepare(`
+    const lastEntry = database
+      .prepare(
+        `
       SELECT balance FROM ledger_entries 
       WHERE customer_id IS NULL 
       ORDER BY created_at DESC, id DESC 
       LIMIT 1
-    `).get();
-    
+    `
+      )
+      .get();
+
     balance = (lastEntry?.balance || 0) + debit - credit;
   }
-  
+
   const stmt = database.prepare(`
     INSERT INTO ledger_entries (
       id, entry_type, reference_type, reference_id, customer_id,
@@ -92,7 +111,7 @@ function createLedgerEntry({
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
   `);
-  
+
   stmt.run(
     id,
     entryType,
@@ -108,7 +127,7 @@ function createLedgerEntry({
     now,
     deviceId
   );
-  
+
   return {
     id,
     entryType,
@@ -122,7 +141,7 @@ function createLedgerEntry({
     date,
     createdAt: now,
     updatedAt: now,
-    syncStatus: 'PENDING',
+    syncStatus: "PENDING",
     deviceId,
   };
 }
@@ -137,36 +156,42 @@ function createLedgerEntry({
  * @param {Object} [db] - Database instance
  * @returns {Object} Created adjustment entry
  */
-function createAdjustmentEntry({ 
-  originalEntryId, 
-  reason, 
-  adjustmentDebit = 0, 
-  adjustmentCredit = 0,
-  customerId 
-}, db = null) {
+function createAdjustmentEntry(
+  {
+    originalEntryId,
+    reason,
+    adjustmentDebit = 0,
+    adjustmentCredit = 0,
+    customerId,
+  },
+  db = null
+) {
   const database = db || getDatabase();
-  
+
   // Get original entry for reference
-  const originalEntry = database.prepare(
-    'SELECT * FROM ledger_entries WHERE id = ?'
-  ).get(originalEntryId);
-  
+  const originalEntry = database
+    .prepare("SELECT * FROM ledger_entries WHERE id = ?")
+    .get(originalEntryId);
+
   if (!originalEntry) {
     throw new Error(`Original entry ${originalEntryId} not found`);
   }
-  
+
   const description = `ADJUSTMENT: ${reason} (Ref: ${originalEntryId})`;
-  
-  return createLedgerEntry({
-    entryType: ENTRY_TYPES.ADJUSTMENT,
-    referenceType: REFERENCE_TYPES.SYSTEM,
-    referenceId: originalEntryId,
-    customerId: customerId || originalEntry.customer_id,
-    description,
-    debit: adjustmentDebit,
-    credit: adjustmentCredit,
-    date: getCurrentTimestamp().split('T')[0],
-  }, database);
+
+  return createLedgerEntry(
+    {
+      entryType: ENTRY_TYPES.ADJUSTMENT,
+      referenceType: REFERENCE_TYPES.SYSTEM,
+      referenceId: originalEntryId,
+      customerId: customerId || originalEntry.customer_id,
+      description,
+      debit: adjustmentDebit,
+      credit: adjustmentCredit,
+      date: getCurrentTimestamp().split("T")[0],
+    },
+    database
+  );
 }
 
 /**
@@ -178,25 +203,25 @@ function createAdjustmentEntry({
  */
 function getCashLedger(filters = {}) {
   const db = getDatabase();
-  
+
   let query = `
     SELECT * FROM ledger_entries 
     WHERE customer_id IS NULL
   `;
   const params = [];
-  
+
   if (filters.startDate) {
-    query += ' AND date >= ?';
+    query += " AND date >= ?";
     params.push(filters.startDate);
   }
-  
+
   if (filters.endDate) {
-    query += ' AND date <= ?';
+    query += " AND date <= ?";
     params.push(filters.endDate);
   }
-  
-  query += ' ORDER BY created_at ASC, id ASC';
-  
+
+  query += " ORDER BY created_at ASC, id ASC";
+
   return db.prepare(query).all(...params);
 }
 
@@ -210,25 +235,25 @@ function getCashLedger(filters = {}) {
  */
 function getCustomerLedger(customerId, filters = {}) {
   const db = getDatabase();
-  
+
   let query = `
     SELECT * FROM ledger_entries 
     WHERE customer_id = ?
   `;
   const params = [customerId];
-  
+
   if (filters.startDate) {
-    query += ' AND date >= ?';
+    query += " AND date >= ?";
     params.push(filters.startDate);
   }
-  
+
   if (filters.endDate) {
-    query += ' AND date <= ?';
+    query += " AND date <= ?";
     params.push(filters.endDate);
   }
-  
-  query += ' ORDER BY created_at ASC, id ASC';
-  
+
+  query += " ORDER BY created_at ASC, id ASC";
+
   return db.prepare(query).all(...params);
 }
 
@@ -239,37 +264,37 @@ function getCustomerLedger(customerId, filters = {}) {
  */
 function getAllLedgerEntries(filters = {}) {
   const db = getDatabase();
-  
-  let query = 'SELECT * FROM ledger_entries WHERE 1=1';
+
+  let query = "SELECT * FROM ledger_entries WHERE 1=1";
   const params = [];
-  
+
   if (filters.entryType) {
-    query += ' AND entry_type = ?';
+    query += " AND entry_type = ?";
     params.push(filters.entryType);
   }
-  
+
   if (filters.customerId) {
-    query += ' AND customer_id = ?';
+    query += " AND customer_id = ?";
     params.push(filters.customerId);
   }
-  
+
   if (filters.startDate) {
-    query += ' AND date >= ?';
+    query += " AND date >= ?";
     params.push(filters.startDate);
   }
-  
+
   if (filters.endDate) {
-    query += ' AND date <= ?';
+    query += " AND date <= ?";
     params.push(filters.endDate);
   }
-  
-  query += ' ORDER BY created_at DESC, id DESC';
-  
+
+  query += " ORDER BY created_at DESC, id DESC";
+
   if (filters.limit) {
-    query += ' LIMIT ?';
+    query += " LIMIT ?";
     params.push(filters.limit);
   }
-  
+
   return db.prepare(query).all(...params);
 }
 
@@ -280,7 +305,7 @@ function getAllLedgerEntries(filters = {}) {
  */
 function getLedgerEntryById(id) {
   const db = getDatabase();
-  return db.prepare('SELECT * FROM ledger_entries WHERE id = ?').get(id);
+  return db.prepare("SELECT * FROM ledger_entries WHERE id = ?").get(id);
 }
 
 /**
@@ -293,18 +318,22 @@ function recalculateCustomerBalance(customerId, db = null) {
   // Note: This would require temporarily disabling the update trigger
   // For now, we'll just calculate and return the correct balance
   const database = db || getDatabase();
-  
-  const entries = database.prepare(`
+
+  const entries = database
+    .prepare(
+      `
     SELECT id, debit, credit FROM ledger_entries 
     WHERE customer_id = ? 
     ORDER BY created_at ASC, id ASC
-  `).all(customerId);
-  
+  `
+    )
+    .all(customerId);
+
   let balance = 0;
   for (const entry of entries) {
     balance += entry.debit - entry.credit;
   }
-  
+
   return balance;
 }
 

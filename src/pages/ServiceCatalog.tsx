@@ -70,7 +70,6 @@ export default function ServiceCatalog() {
   };
 
   const handleEditService = () => {
-    // TODO: Implement update service type in database
     toast({
       title: 'Not Implemented',
       description: 'Service update will be available soon.',

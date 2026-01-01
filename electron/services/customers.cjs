@@ -1,7 +1,11 @@
-const { v4: uuidv4 } = require('uuid');
-const { getDatabase, getDeviceId, getCurrentTimestamp } = require('../db/database.cjs');
-const { withTransaction } = require('../db/transaction.cjs');
-const { createAuditLog } = require('./audit.cjs');
+const { v4: uuidv4 } = require("uuid");
+const {
+  getDatabase,
+  getDeviceId,
+  getCurrentTimestamp,
+} = require("../db/database.cjs");
+const { withTransaction } = require("../db/transaction.cjs");
+const { createAuditLog } = require("./audit.cjs");
 
 /**
  * Customer Service
@@ -22,7 +26,7 @@ function createCustomer(data, userId = null) {
     const deviceId = getDeviceId();
     const now = getCurrentTimestamp();
     const id = uuidv4();
-    
+
     const stmt = db.prepare(`
       INSERT INTO customers (
         id, name, phone, address, outstanding_balance,
@@ -30,39 +34,42 @@ function createCustomer(data, userId = null) {
       )
       VALUES (?, ?, ?, ?, 0, ?, ?, 'PENDING', ?)
     `);
-    
+
     stmt.run(
       id,
       data.name,
-      data.phone || '',
-      data.address || '',
+      data.phone || "",
+      data.address || "",
       now,
       now,
       deviceId
     );
-    
+
     const customer = {
       id,
       name: data.name,
-      phone: data.phone || '',
-      address: data.address || '',
+      phone: data.phone || "",
+      address: data.address || "",
       outstandingBalance: 0,
       createdAt: now,
       updatedAt: now,
-      syncStatus: 'PENDING',
+      syncStatus: "PENDING",
       deviceId,
     };
-    
+
     // Create audit log
-    createAuditLog({
-      action: 'CREATE',
-      tableName: 'customers',
-      recordId: id,
-      oldValue: null,
-      newValue: customer,
-      userId,
-    }, db);
-    
+    createAuditLog(
+      {
+        action: "CREATE",
+        tableName: "customers",
+        recordId: id,
+        oldValue: null,
+        newValue: customer,
+        userId,
+      },
+      db
+    );
+
     return customer;
   });
 }
@@ -77,55 +84,58 @@ function createCustomer(data, userId = null) {
 function updateCustomer(id, data, userId = null) {
   return withTransaction((db) => {
     const now = getCurrentTimestamp();
-    
+
     // Get current customer
-    const current = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+    const current = db.prepare("SELECT * FROM customers WHERE id = ?").get(id);
     if (!current) {
       throw new Error(`Customer ${id} not found`);
     }
-    
+
     const updates = [];
     const params = [];
-    
+
     if (data.name !== undefined) {
-      updates.push('name = ?');
+      updates.push("name = ?");
       params.push(data.name);
     }
     if (data.phone !== undefined) {
-      updates.push('phone = ?');
+      updates.push("phone = ?");
       params.push(data.phone);
     }
     if (data.address !== undefined) {
-      updates.push('address = ?');
+      updates.push("address = ?");
       params.push(data.address);
     }
-    
-    updates.push('updated_at = ?');
+
+    updates.push("updated_at = ?");
     params.push(now);
-    
+
     updates.push("sync_status = 'PENDING'");
-    
+
     params.push(id);
-    
+
     const stmt = db.prepare(`
-      UPDATE customers SET ${updates.join(', ')} WHERE id = ?
+      UPDATE customers SET ${updates.join(", ")} WHERE id = ?
     `);
-    
+
     stmt.run(...params);
-    
+
     // Get updated customer
-    const updated = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
-    
+    const updated = db.prepare("SELECT * FROM customers WHERE id = ?").get(id);
+
     // Create audit log
-    createAuditLog({
-      action: 'UPDATE',
-      tableName: 'customers',
-      recordId: id,
-      oldValue: current,
-      newValue: updated,
-      userId,
-    }, db);
-    
+    createAuditLog(
+      {
+        action: "UPDATE",
+        tableName: "customers",
+        recordId: id,
+        oldValue: current,
+        newValue: updated,
+        userId,
+      },
+      db
+    );
+
     return formatCustomer(updated);
   });
 }
@@ -138,23 +148,31 @@ function updateCustomer(id, data, userId = null) {
  */
 function updateOutstandingBalance(customerId, db = null) {
   const database = db || getDatabase();
-  
+
   // Calculate outstanding balance from ledger entries
-  const result = database.prepare(`
+  const result = database
+    .prepare(
+      `
     SELECT 
       COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0) as balance
     FROM ledger_entries 
     WHERE customer_id = ?
-  `).get(customerId);
-  
+  `
+    )
+    .get(customerId);
+
   const balance = result?.balance || 0;
-  
-  database.prepare(`
+
+  database
+    .prepare(
+      `
     UPDATE customers 
     SET outstanding_balance = ?, updated_at = ?, sync_status = 'PENDING'
     WHERE id = ?
-  `).run(balance, getCurrentTimestamp(), customerId);
-  
+  `
+    )
+    .run(balance, getCurrentTimestamp(), customerId);
+
   return balance;
 }
 
@@ -166,18 +184,18 @@ function updateOutstandingBalance(customerId, db = null) {
  */
 function getCustomers(filters = {}) {
   const db = getDatabase();
-  
-  let query = 'SELECT * FROM customers WHERE 1=1';
+
+  let query = "SELECT * FROM customers WHERE 1=1";
   const params = [];
-  
+
   if (filters.search) {
-    query += ' AND (name LIKE ? OR phone LIKE ? OR address LIKE ?)';
+    query += " AND (name LIKE ? OR phone LIKE ? OR address LIKE ?)";
     const searchTerm = `%${filters.search}%`;
     params.push(searchTerm, searchTerm, searchTerm);
   }
-  
-  query += ' ORDER BY name ASC';
-  
+
+  query += " ORDER BY name ASC";
+
   const customers = db.prepare(query).all(...params);
   return customers.map(formatCustomer);
 }
@@ -189,7 +207,7 @@ function getCustomers(filters = {}) {
  */
 function getCustomerById(id) {
   const db = getDatabase();
-  const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+  const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(id);
   return customer ? formatCustomer(customer) : null;
 }
 
@@ -200,19 +218,30 @@ function getCustomerById(id) {
  */
 function getCustomerWithLedger(id) {
   const db = getDatabase();
-  const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
-  
+  const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(id);
+
   if (!customer) return null;
-  
-  const ledgerEntries = db.prepare(`
+
+  const ledgerEntries = db
+    .prepare(
+      `
     SELECT * FROM ledger_entries 
     WHERE customer_id = ? 
-    ORDER BY created_at ASC, id ASC
-  `).all(id);
-  
+    ORDER BY date ASC, created_at ASC, id ASC
+  `
+    )
+    .all(id);
+
   return {
     ...formatCustomer(customer),
-    ledgerEntries,
+    ledgerEntries: ledgerEntries.map((entry) => ({
+      id: entry.id,
+      date: entry.date,
+      description: entry.description,
+      debit: entry.debit,
+      credit: entry.credit,
+      created_at: entry.created_at,
+    })),
   };
 }
 
@@ -224,29 +253,36 @@ function getCustomerWithLedger(id) {
 function deleteCustomer(id, userId = null) {
   return withTransaction((db) => {
     // Check if customer has any jobs or payments
-    const hasJobs = db.prepare('SELECT COUNT(*) as count FROM jobs WHERE customer_id = ?').get(id);
-    const hasPayments = db.prepare('SELECT COUNT(*) as count FROM payments WHERE customer_id = ?').get(id);
-    
+    const hasJobs = db
+      .prepare("SELECT COUNT(*) as count FROM jobs WHERE customer_id = ?")
+      .get(id);
+    const hasPayments = db
+      .prepare("SELECT COUNT(*) as count FROM payments WHERE customer_id = ?")
+      .get(id);
+
     if (hasJobs.count > 0 || hasPayments.count > 0) {
-      throw new Error('Cannot delete customer with existing jobs or payments');
+      throw new Error("Cannot delete customer with existing jobs or payments");
     }
-    
-    const current = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
+
+    const current = db.prepare("SELECT * FROM customers WHERE id = ?").get(id);
     if (!current) {
       throw new Error(`Customer ${id} not found`);
     }
-    
-    db.prepare('DELETE FROM customers WHERE id = ?').run(id);
-    
-    createAuditLog({
-      action: 'DELETE',
-      tableName: 'customers',
-      recordId: id,
-      oldValue: current,
-      newValue: null,
-      userId,
-    }, db);
-    
+
+    db.prepare("DELETE FROM customers WHERE id = ?").run(id);
+
+    createAuditLog(
+      {
+        action: "DELETE",
+        tableName: "customers",
+        recordId: id,
+        oldValue: current,
+        newValue: null,
+        userId,
+      },
+      db
+    );
+
     return { success: true };
   });
 }

@@ -1,4 +1,5 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -13,17 +14,31 @@ import {
   Settings,
   HelpCircle,
   Search,
-  Cloud,
+  Warehouse,
+  ArrowLeftRight,
+  FileText,
+  DollarSign,
+  AlertTriangle,
+  Calculator,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { GlobalSearchDialog } from '@/components/shared/GlobalSearchDialog';
+import { HelpDialog } from '@/components/shared/HelpDialog';
 
 const mainNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'accountant', 'data_entry'] },
   { path: '/customers', label: 'Customers', icon: Users, roles: ['admin', 'accountant', 'data_entry'] },
   { path: '/jobs', label: 'Jobs / Services', icon: Briefcase, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/invoices', label: 'Invoices', icon: FileText, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/estimates', label: 'Estimates', icon: FileText, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/challans', label: 'Challans', icon: FileText, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/items', label: 'Inventory', icon: Package, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/warehouses', label: 'Warehouses', icon: Warehouse, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/stock-movements', label: 'Stock Movements', icon: ArrowLeftRight, roles: ['admin', 'accountant', 'data_entry'] },
+  { path: '/reorder-management', label: 'Reorder Management', icon: AlertTriangle, roles: ['admin', 'accountant', 'data_entry'] },
   { path: '/payments', label: 'Payments', icon: CreditCard, roles: ['admin', 'accountant', 'data_entry'] },
   { path: '/expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'accountant', 'data_entry'] },
 ];
@@ -31,17 +46,44 @@ const mainNavItems = [
 const reportingNavItems = [
   { path: '/ledgers', label: 'Ledgers', icon: BookOpen, roles: ['admin', 'accountant'] },
   { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant'] },
+  { path: '/tax-reports', label: 'Tax Reports', icon: FileText, roles: ['admin', 'accountant'] },
+  { path: '/receivables-payables', label: 'Receivables & Payables', icon: DollarSign, roles: ['admin', 'accountant'] },
+  { path: '/inventory-valuation', label: 'Inventory Valuation', icon: Calculator, roles: ['admin', 'accountant'] },
 ];
 
 const settingsNavItems = [
   { path: '/service-catalog', label: 'Service Catalog', icon: Package, roles: ['admin'] },
+  { path: '/company-settings', label: 'Company Settings', icon: Settings, roles: ['admin'] },
+  { path: '/tax-settings', label: 'Tax Settings', icon: Settings, roles: ['admin'] },
   { path: '/users', label: 'Users', icon: UserCog, roles: ['admin'] },
-  { path: '/sync', label: 'Sync Status', icon: Cloud, roles: ['admin'] },
 ];
 
 export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Check if we're on a settings page
+  const isOnSettingsPage = location.pathname.startsWith('/app-settings') ||
+    location.pathname.startsWith('/company-settings') ||
+    location.pathname.startsWith('/tax-settings') ||
+    location.pathname.startsWith('/service-catalog') ||
+    location.pathname.startsWith('/users');
+
+  // Keyboard shortcut: Cmd/Ctrl + K to open search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const filterByRole = (items: typeof mainNavItems) => 
     items.filter(item => user && item.roles.includes(user.role));
@@ -121,15 +163,29 @@ export function Sidebar() {
 
       {/* Bottom Section */}
       <div className="border-t border-sidebar-border p-3 space-y-1">
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors">
+        <button
+          onClick={() => setIsSearchOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors"
+        >
           <Search className="h-4 w-4" />
           Search
         </button>
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors">
+        <button
+          onClick={() => navigate('/app-settings')}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2 rounded-lg text-sm w-full transition-colors',
+            isOnSettingsPage
+              ? 'bg-primary/15 text-primary'
+              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+          )}
+        >
           <Settings className="h-4 w-4" />
           Settings
         </button>
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors">
+        <button
+          onClick={() => setIsHelpOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full transition-colors"
+        >
           <HelpCircle className="h-4 w-4" />
           Get Help
         </button>
@@ -151,6 +207,10 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <GlobalSearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
+      <HelpDialog open={isHelpOpen} onOpenChange={setIsHelpOpen} />
     </aside>
   );
 }

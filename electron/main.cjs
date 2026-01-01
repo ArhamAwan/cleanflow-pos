@@ -49,19 +49,9 @@ function createWindow() {
     }
   });
 
-  // Debug: Log when preload script finishes loading
+  // Page finished loading
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('✅ Page finished loading');
-    // Check if electronAPI is available in the page
-    mainWindow.webContents.executeJavaScript(`
-      console.log('🔍 Checking window.electronAPI:', typeof window.electronAPI !== 'undefined');
-      if (typeof window.electronAPI !== 'undefined') {
-        console.log('✅ window.electronAPI available');
-        console.log('✅ Available APIs:', Object.keys(window.electronAPI));
-      } else {
-        console.error('❌ window.electronAPI NOT FOUND');
-      }
-    `).catch(err => console.error('Error checking electronAPI:', err));
+    // Page loaded
   });
   
   if (isDev) {
@@ -161,10 +151,15 @@ app.whenReady().then(() => {
   // Initialize SQLite backend before creating window
   try {
     const backendReady = initializeBackend();
-    console.log('Backend ready:', backendReady);
+    if (!backendReady) {
+      const { dialog } = require('electron');
+      dialog.showErrorBox(
+        'Initialization Error',
+        'Failed to initialize backend. Check console for details.'
+      );
+    }
   } catch (error) {
     console.error('Failed to initialize backend:', error);
-    // Show error dialog
     const { dialog } = require('electron');
     dialog.showErrorBox(
       'Initialization Error',

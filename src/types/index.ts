@@ -157,9 +157,148 @@ export interface MonthlyReportSummary {
   netProfit: number;
 }
 
+// ==================== Invoice ====================
+
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'PARTIAL' | 'OVERDUE';
+export type InvoiceType = 'TAX_INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE';
+
+export interface InvoiceItem extends BaseEntity {
+  invoiceId: string;
+  itemId?: string | null;
+  variantId?: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  taxRate: number;
+  taxAmount: number;
+  lineTotal: number;
+  serialNumber?: string | null;
+}
+
+export interface Invoice extends BaseEntity {
+  invoiceNumber: string;
+  invoiceType: InvoiceType;
+  customerId: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerAddress?: string | null;
+  date: string;
+  dueDate?: string | null;
+  subtotal: number;
+  discountAmount: number;
+  discountPercent: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: InvoiceStatus;
+  paymentTerms?: string | null;
+  notes?: string | null;
+  referenceNumber?: string | null;
+  items?: InvoiceItem[];
+}
+
+// ==================== Estimate ====================
+
+export interface EstimateItem extends BaseEntity {
+  estimateId: string;
+  itemId?: string | null;
+  variantId?: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  taxRate: number;
+  taxAmount: number;
+  lineTotal: number;
+}
+
+export interface Estimate extends BaseEntity {
+  estimateNumber: string;
+  customerId: string;
+  customerName?: string | null;
+  date: string;
+  validUntil?: string | null;
+  subtotal: number;
+  discountAmount: number;
+  discountPercent: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  notes?: string | null;
+  items?: EstimateItem[];
+}
+
+// ==================== Delivery Challan ====================
+
+export interface ChallanItem extends BaseEntity {
+  challanId: string;
+  itemId?: string | null;
+  variantId?: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  taxRate: number;
+  taxAmount: number;
+  lineTotal: number;
+}
+
+export interface DeliveryChallan extends BaseEntity {
+  challanNumber: string;
+  customerId: string;
+  customerName?: string | null;
+  date: string;
+  subtotal: number;
+  discountAmount: number;
+  discountPercent: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: 'DRAFT' | 'SENT' | 'DELIVERED';
+  notes?: string | null;
+  items?: ChallanItem[];
+}
+
+// ==================== Company Settings ====================
+
+export interface CompanySettings extends BaseEntity {
+  companyName: string;
+  logoUrl?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  taxId?: string | null;
+  salesTaxRegistration?: string | null;
+  signatureUrl?: string | null;
+  brandColorPrimary?: string | null;
+  brandColorSecondary?: string | null;
+}
+
 // ==================== App Settings ====================
 
 export interface AppSettings {
-  deviceId: string;
+  deviceId?: string;
+  serverUrl?: string;
   lastSyncAt?: string;
+  appearance?: {
+    theme: 'light' | 'dark' | 'system';
+    fontSize: 'small' | 'medium' | 'large';
+    compactView: boolean;
+    showAnimations: boolean;
+  };
+  notifications?: {
+    enabled: boolean;
+    lowStockThreshold: number;
+    paymentReminders: boolean;
+    invoiceDueAlerts: boolean;
+    soundEnabled: boolean;
+    desktopNotifications: boolean;
+  };
+  performance?: {
+    autoRefreshInterval: number;
+    pageSize: number;
+    animationsEnabled: boolean;
+    offlineMode: boolean;
+    cacheSizeLimit: number;
+  };
 }

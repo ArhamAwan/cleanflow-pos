@@ -18,6 +18,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return 'light';
   });
 
+  // Listen for theme changes from SettingsContext
+  useEffect(() => {
+    const handleThemeChange = (event: CustomEvent) => {
+      setTheme(event.detail as Theme);
+    };
+    window.addEventListener('theme-changed', handleThemeChange as EventListener);
+    return () => window.removeEventListener('theme-changed', handleThemeChange as EventListener);
+  }, []);
+
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
